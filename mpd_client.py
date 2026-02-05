@@ -3,7 +3,7 @@ Example MPD Client with python-mpd2 and TinyXUI.
 by 0Stormy
 """
 
-import xui
+import xui as xui
 from mpd import MPDClient
 
 client = MPDClient()

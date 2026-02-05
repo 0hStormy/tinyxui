@@ -3,11 +3,11 @@ TinyXUI. A open source, fast, and light GUI toolkit for Python.
 by 0Stormy
 """
 
-import skia
+
 import xml.etree.ElementTree as ET
 import sdl2
 import sdl2.ext
-import ctypes
+import sdl2.sdlttf as sdlttf
 
 
 WIDTH = 640
@@ -87,164 +87,150 @@ def layout_widgets(widgets):
 
 class renderer:
     class draw:
-        """All functions related to drawing widgets"""
-
         @staticmethod
-        def background(canvas):
+        def background(sdl_renderer):
             """Draws background"""
-            paint = skia.Paint(
-                Color=renderer.hex_to_argb(STYLE["bg"]),
-                Style=skia.Paint.kFill_Style,
-                AntiAlias=True,
+            color = renderer.hex_to_argb(STYLE["bg"])
+            sdl2.SDL_SetRenderDrawColor(
+                sdl_renderer, color.r, color.g, color.b, 255
             )
-            rect = skia.Rect.MakeLTRB(0, 0, WIDTH, HEIGHT)
-            canvas.drawRect(rect, paint)
+            sdl2.SDL_RenderClear(sdl_renderer)
 
         @staticmethod
-        def folder(canvas, y, label="", selected=False):
+        def folder(sdl_renderer, font, y, label="", selected=False):
             """Draws a folder/page widget"""
-            folder_height = 32
+            h = 32
 
             if selected:
-                fill = skia.Paint(
-                    Color=renderer.hex_to_argb(STYLE["highlight"]),
-                    Style=skia.Paint.kFill_Style,
-                    AntiAlias=True,
+                c = renderer.hex_to_argb(STYLE["highlight"])
+                sdl2.SDL_SetRenderDrawColor(
+                    sdl_renderer, c.r, c.g, c.b, 255
                 )
-                rect = skia.Rect.MakeLTRB(0, y, WIDTH, y + folder_height)
-                canvas.drawRect(rect, fill)
+                sdl2.SDL_RenderFillRect(
+                    sdl_renderer, sdl2.SDL_Rect(0, y, WIDTH, h)
+                )
 
-            text_paint = skia.Paint(
-                Color=renderer.hex_to_argb(STYLE["text"]),
-                AntiAlias=False,
+            renderer.draw_text(
+                sdl_renderer,
+                font,
+                label,
+                STYLE["padding"],
+                y + 8,
+                renderer.hex_to_argb(STYLE["text"]),
             )
+            return h
 
-            text = skia.TextBlob(label, skia.Font(None, 12.0))
-            text_y = y + round(folder_height / 1.5)
-            canvas.drawTextBlob(text, STYLE["padding"], text_y, text_paint)
-
-            return folder_height
-        
         @staticmethod
-        def button(canvas, y, label="", selected=False, mouse_down=False):
+        def button(sdl_renderer, font, y, label="", selected=False, mouse_down=False):
             """Draws a clickable button"""
-            button_height = 32
+            h = 32
 
             if selected:
-                if mouse_down:
-                    button_color = STYLE["accent"]
-                    border_color = STYLE["accent"]
-                else:
-                    button_color = STYLE["highlight"]
-                    border_color = STYLE["accent"]
+                bg = STYLE["accent"] if mouse_down else STYLE["highlight"]
+                border = STYLE["accent"]
             else:
-                button_color = STYLE["button"]
-                border_color = STYLE["separator"]
+                bg = STYLE["button"]
+                border = STYLE["separator"]
 
-            fill = skia.Paint(
-                Color=renderer.hex_to_argb(button_color),
-                Style=skia.Paint.kFill_Style,
-                AntiAlias=True,
+            bgc = renderer.hex_to_argb(bg)
+            bc = renderer.hex_to_argb(border)
+
+            sdl2.SDL_SetRenderDrawColor(
+                sdl_renderer, bgc.r, bgc.g, bgc.b, 255
+            )
+            sdl2.SDL_RenderFillRect(
+                sdl_renderer, sdl2.SDL_Rect(0, y, WIDTH, h)
             )
 
-            border = skia.Paint(
-                Color=renderer.hex_to_argb(border_color),
-                Style=skia.Paint.kStroke_Style,
-                AntiAlias=False,
-                StrokeWidth=1
+            sdl2.SDL_SetRenderDrawColor(
+                sdl_renderer, bc.r, bc.g, bc.b, 255
+            )
+            sdl2.SDL_RenderDrawRect(
+                sdl_renderer, sdl2.SDL_Rect(0, y, WIDTH, h)
             )
 
-            text_paint = skia.Paint(
-                Color=renderer.hex_to_argb(STYLE["text"]),
-                AntiAlias=False,
+            renderer.draw_text(
+                sdl_renderer,
+                font,
+                label,
+                STYLE["padding"],
+                y + 8,
+                renderer.hex_to_argb(STYLE["text"]),
             )
-
-            text = skia.TextBlob(label, skia.Font(None, 12.0))
-            text_y = y + round(button_height / 1.5)
-            rect = skia.Rect.MakeLTRB(0, y, WIDTH, y + button_height)
-            border_rect = skia.Rect.MakeLTRB(
-                0,
-                y,
-                (WIDTH - 1),
-                (y + button_height - 1)
-            )
-            canvas.drawRect(rect, fill)
-            canvas.drawRect(border_rect, border)
-            canvas.drawTextBlob(text, STYLE["padding"], text_y, text_paint)
-
-            return button_height
+            return h
 
         @staticmethod
-        def label(canvas, y, label=""):
+        def label(sdl_renderer, font, y, label=""):
             """Draws a text label"""
-            folder_height = 24
-
-            text_paint = skia.Paint(
-                Color=renderer.hex_to_argb(STYLE["text"]),
-                AntiAlias=False,
+            renderer.draw_text(
+                sdl_renderer,
+                font,
+                label,
+                STYLE["padding"],
+                y + 4,
+                renderer.hex_to_argb(STYLE["text"]),
             )
-
-            text = skia.TextBlob(label, skia.Font(None, 12.0))
-            text_y = y + round(folder_height / 1.4)
-            canvas.drawTextBlob(text, STYLE["padding"], text_y, text_paint)
-
-            return folder_height
+            return 24
 
         @staticmethod
-        def separator(canvas, y, margin=(0, 0)):
+        def separator(sdl_renderer, y):
             """Draws a separator line"""
-            separator_height = 1
-            fill = skia.Paint(
-                Color=renderer.hex_to_argb(STYLE["separator"]),
-                Style=skia.Paint.kFill_Style,
-                AntiAlias=True,
+            c = renderer.hex_to_argb(STYLE["separator"])
+            sdl2.SDL_SetRenderDrawColor(
+                sdl_renderer, c.r, c.g, c.b, 255
             )
-
-            rect = skia.Rect.MakeLTRB(
-                0,
-                y + margin[0],
-                WIDTH,
-                y + margin[0] + separator_height,
+            sdl2.SDL_RenderDrawLine(
+                sdl_renderer, 0, y, WIDTH, y
             )
-            canvas.drawRect(rect, fill)
-
-            return separator_height + margin[0] + margin[1]
+            return 1
 
     @staticmethod
-    def draw_widgets(canvas, widgets, selected_index, mouse_down):
+    def draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down):
         """Draws each widget in order"""
         for i, w in enumerate(widgets):
-            w.selected = (i == selected_index)
+            selected = i == selected_index
             match w.type:
                 case "folder":
-                    renderer.draw.folder(canvas, w.y, w.label, w.selected)
+                    renderer.draw.folder(sdl_renderer, font, w.y, w.label, selected)
                 case "button":
-                    renderer.draw.button(canvas, w.y, w.label, w.selected, mouse_down)
+                    renderer.draw.button(
+                        sdl_renderer, font, w.y, w.label, selected, mouse_down
+                    )
                 case "label":
-                    renderer.draw.label(canvas, w.y, w.label)
+                    renderer.draw.label(sdl_renderer, font, w.y, w.label)
                 case "separator":
-                    renderer.draw.separator(canvas, w.y)
+                    renderer.draw.separator(sdl_renderer, w.y)
 
-    @staticmethod
-    def hex_to_argb(hex_code="#000", alpha=255):
-        """Converts hex codes to Skia ARGB"""
+
+    def draw_text(renderer, font, text, x, y, color):
+        """Draws bare text, should be used with a widget"""
+        surface = sdlttf.TTF_RenderUTF8_Blended(font, text.encode("utf-8"), color)
+        texture = sdl2.SDL_CreateTextureFromSurface(renderer, surface)
+
+        rect = sdl2.SDL_Rect(x, y, surface.contents.w, surface.contents.h)
+        sdl2.SDL_RenderCopy(renderer, texture, None, rect)
+
+        sdl2.SDL_FreeSurface(surface)
+        sdl2.SDL_DestroyTexture(texture)
+
+
+    def hex_to_argb(hex_code, alpha=255):
+        """Converts hex codes to SDL ARGB (r, g, b, alpha)"""
         hex_code = hex_code.lstrip("#")
-
         if len(hex_code) == 3:
             hex_code = "".join(c * 2 for c in hex_code)
-        elif len(hex_code) != 6:
-            raise ValueError(f"Invalid hex color: {hex_code}")
-
         r = int(hex_code[0:2], 16)
         g = int(hex_code[2:4], 16)
         b = int(hex_code[4:6], 16)
-
-        return skia.ColorSetARGB(alpha, r, g, b)
+        return sdl2.SDL_Color(r, g, b, alpha)
 
 
 def start(xml_file="demo.xml"):
     """Main UI Function"""
     sdl2.ext.init()
+    sdlttf.TTF_Init()
+    font = sdlttf.TTF_OpenFont(b"DejaVuSans.ttf", 12)
+
     dom = parser.parse(xml_file)
 
     window = sdl2.ext.Window(
@@ -258,31 +244,6 @@ def start(xml_file="demo.xml"):
         -1,
         sdl2.SDL_RENDERER_SOFTWARE,
     )
-
-    texture = sdl2.SDL_CreateTexture(
-        sdl_renderer,
-        sdl2.SDL_PIXELFORMAT_ABGR8888,
-        sdl2.SDL_TEXTUREACCESS_STREAMING,
-        WIDTH,
-        HEIGHT,
-    )
-
-    bytes_per_pixel = 4
-    row_bytes = WIDTH * bytes_per_pixel
-    pixel_buffer = bytearray(HEIGHT * row_bytes)
-
-    surface = skia.Surface.MakeRasterDirect(
-        skia.ImageInfo.Make(
-            WIDTH,
-            HEIGHT,
-            skia.kRGBA_8888_ColorType,
-            skia.kPremul_AlphaType,
-        ),
-        pixel_buffer,
-        row_bytes,
-    )
-
-    canvas = surface.getCanvas()
 
     event = sdl2.SDL_Event()
     running = True
@@ -317,49 +278,10 @@ def start(xml_file="demo.xml"):
                         if w.callback:
                             w.callback()
 
-
-        canvas.clear(skia.ColorWHITE)
-        renderer.draw.background(canvas)
-        renderer.draw_widgets(canvas, widgets, selected_index, mouse_down)
-
-        # Upload pixels to SDL texture
-        pixels = ctypes.c_void_p()
-        pitch = ctypes.c_int()
-        sdl2.SDL_LockTexture(
-            texture,
-            None,
-            ctypes.byref(pixels),
-            ctypes.byref(pitch)
-        )
-        ctypes.memmove(pixels.value, bytes(pixel_buffer), len(pixel_buffer))
-        sdl2.SDL_UnlockTexture(texture)
-
-        # Present to window
-        sdl2.SDL_RenderClear(sdl_renderer)
-        sdl2.SDL_RenderCopy(sdl_renderer, texture, None, None)
+        renderer.draw.background(sdl_renderer)
+        renderer.draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down)
         sdl2.SDL_RenderPresent(sdl_renderer)
 
-        pixels = ctypes.c_void_p()
-        pitch = ctypes.c_int()
-
-        sdl2.SDL_LockTexture(
-            texture,
-            None,
-            ctypes.byref(pixels),
-            ctypes.byref(pitch),
-        )
-
-        ctypes.memmove(
-            pixels.value,
-            bytes(pixel_buffer),
-            len(pixel_buffer),
-        )
-
-        sdl2.SDL_UnlockTexture(texture)
-
-        sdl2.SDL_RenderClear(sdl_renderer)
-        sdl2.SDL_RenderCopy(sdl_renderer, texture, None, None)
-        sdl2.SDL_RenderPresent(sdl_renderer)
         
     sdl2.ext.quit()
 
