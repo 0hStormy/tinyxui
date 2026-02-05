@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tinyxui title="TinyXUI MPD Client">
+    <label>TinyXUI MPD Client</label>
+    <separator />
+    <label>Unknown Song</label>
+    <label>Unknown Album</label>
+    <label>Unknown Artist</label>
+    <separator />
+    <button id="playback_toggle" label="Pause/Play"></button>
+    <button id="next_button" label="Next"></button>
+    <button id="previous_button" label="Previous"></button>
+</tinyxui>
