@@ -139,21 +139,21 @@ class renderer:
                 sdl_renderer, bgc.r, bgc.g, bgc.b, 255
             )
             sdl2.SDL_RenderFillRect(
-                sdl_renderer, sdl2.SDL_Rect(0, y, WIDTH, h)
+                sdl_renderer, sdl2.SDL_Rect(STYLE["margin"], y, (WIDTH - (STYLE["margin"] * 2)), h)
             )
 
             sdl2.SDL_SetRenderDrawColor(
                 sdl_renderer, bc.r, bc.g, bc.b, 255
             )
             sdl2.SDL_RenderDrawRect(
-                sdl_renderer, sdl2.SDL_Rect(0, y, WIDTH, h)
+                sdl_renderer, sdl2.SDL_Rect(STYLE["margin"], y, (WIDTH - (STYLE["margin"] * 2)), h)
             )
 
             renderer.draw_text(
                 sdl_renderer,
                 font,
                 label,
-                STYLE["padding"],
+                (STYLE["padding"] * 2),
                 y + 8,
                 renderer.hex_to_argb(STYLE["text"]),
             )
