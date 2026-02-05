@@ -20,7 +20,7 @@ STYLE = {
     "separator": "#d1d2d3",
     "text": "#232629",
     "highlight": "#badcee",
-    "padding": 8,
+    "padding": 16,
     "margin": 4
 }
 
@@ -153,7 +153,7 @@ class renderer:
                 sdl_renderer,
                 font,
                 label,
-                (STYLE["padding"] * 2),
+                (STYLE["margin"] + STYLE["padding"]),
                 y + 8,
                 renderer.hex_to_argb(STYLE["text"]),
             )
