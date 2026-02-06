@@ -23,9 +23,8 @@ STYLE = {
     "padding": 16,
     "margin": 4
 }
-
-
 callbacks = {}
+_widget_registry = {}
 
 def bind_button(id, func):
     """Bind a function to a button with a given ID"""
@@ -43,22 +42,33 @@ class parser:
 
 class Widget:
     def __init__(self, type, label, y, height=0, id=None, callback=None):
-        """Widget properties"""
         self.type = type
         self.label = label
         self.y = y
         self.height = height
         self.id = id
         self.callback = callback
-    
+        self.data = {}
+
     def contains(self, x, y):
-        """Checks in mouse is in widget"""
+        """Checks if mouse is in widget"""
         return 0 <= x < WIDTH and self.y <= y < self.y + self.height
 
     def set_position(self, y):
         """Sets widget screen position"""
         self.y = y
+    
+    def set_attribute(self, attr, value):
+        """Set an attribute if it exists"""
+        if hasattr(self, attr):
+            setattr(self, attr, value)
+        else:
+            raise AttributeError(f"Widget has no attribute '{attr}'")
 
+    def set_label(self, value):
+        """Set arbitrary label for this widget"""
+        self.label = value
+    
 
 def build_widgets(dom):
     """Builds all widgets in XML file"""
@@ -67,13 +77,18 @@ def build_widgets(dom):
         wid = element.attrib.get("id")
         match element.tag:
             case "folder":
-                widgets.append(Widget("folder", element.attrib.get("label",""), 0, 32, id=wid))
+                w = Widget("folder", element.attrib.get("label",""), 0, 32, id=wid)
             case "button":
-                widgets.append(Widget("button", element.attrib.get("label",""), 0, 32, id=wid))
+                w = Widget("button", element.attrib.get("label",""), 0, 32, id=wid)
             case "label":
-                widgets.append(Widget("label", element.text or "", 0, 24, id=wid))
+                w = Widget("label", element.text or "", 0, 24, id=wid)
             case "separator":
-                widgets.append(Widget("separator", "", 0, 1, id=wid))
+                w = Widget("separator", "", 0, 1, id=wid)
+            case _:
+                continue
+        widgets.append(w)
+        if wid:
+            _widget_registry[wid] = w  # ← register the widget globally
     return widgets
 
 
@@ -84,6 +99,12 @@ def layout_widgets(widgets):
         w.set_position(y)
         y += w.height + STYLE["margin"]
 
+def widget_from_id(widget_id):
+    """Return the live widget from the currently running UI"""
+    w = _widget_registry.get(widget_id)
+    if not w:
+        raise ValueError(f"No widget with id '{widget_id}' found")
+    return w
 
 class renderer:
     class draw:

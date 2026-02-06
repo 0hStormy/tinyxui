@@ -2,9 +2,9 @@
 <tinyxui title="TinyXUI MPD Client">
     <label>TinyXUI MPD Client</label>
     <separator />
-    <label>Unknown Song</label>
-    <label>Unknown Album</label>
-    <label>Unknown Artist</label>
+    <label id="song_label">Unknown Song</label>
+    <label id="album_label">Unknown Album</label>
+    <label id="artist_label">Unknown Artist</label>
     <separator />
     <button id="playback_toggle" label="Pause/Play"></button>
     <button id="next_button" label="Next"></button>
