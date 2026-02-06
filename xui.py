@@ -76,8 +76,6 @@ def build_widgets(dom):
     for element in dom:
         wid = element.attrib.get("id")
         match element.tag:
-            case "folder":
-                w = Widget("folder", element.attrib.get("label",""), 0, 32, id=wid)
             case "button":
                 w = Widget("button", element.attrib.get("label",""), 0, 32, id=wid)
             case "label":
@@ -116,30 +114,6 @@ class renderer:
                 sdl_renderer, color.r, color.g, color.b, 255
             )
             sdl2.SDL_RenderClear(sdl_renderer)
-
-        @staticmethod
-        def folder(sdl_renderer, font, y, label="", selected=False):
-            """Draws a folder/page widget"""
-            h = 32
-
-            if selected:
-                c = renderer.hex_to_argb(STYLE["highlight"])
-                sdl2.SDL_SetRenderDrawColor(
-                    sdl_renderer, c.r, c.g, c.b, 255
-                )
-                sdl2.SDL_RenderFillRect(
-                    sdl_renderer, sdl2.SDL_Rect(0, y, WIDTH, h)
-                )
-
-            renderer.draw_text(
-                sdl_renderer,
-                font,
-                label,
-                STYLE["padding"],
-                y + 8,
-                renderer.hex_to_argb(STYLE["text"]),
-            )
-            return h
 
         @staticmethod
         def button(sdl_renderer, font, y, label="", selected=False, mouse_down=False):
