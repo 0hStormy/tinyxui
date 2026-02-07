@@ -16,7 +16,6 @@ HEIGHT = 480
 STYLE = {
     "bg": "#eff0f1",
     "accent": "#3daee9",
-    "folder": "#ffffff",
     "button": "#fcfcfc",
     "separator": "#d1d2d3",
     "text": "#232629",
