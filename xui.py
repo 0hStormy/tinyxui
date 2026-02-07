@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 import sdl2
 import sdl2.ext
 import sdl2.sdlttf as sdlttf
+import PIL
 
 
 WIDTH = 640
@@ -20,9 +21,10 @@ STYLE = {
     "separator": "#d1d2d3",
     "text": "#232629",
     "highlight": "#badcee",
-    "padding": 16,
+    "padding": 4,
     "margin": 4
 }
+
 callbacks = {}
 _widget_registry = {}
 
@@ -41,18 +43,18 @@ class parser:
         return root
 
 class Widget:
-    def __init__(self, type, label, y, height=0, id=None, callback=None):
+    def __init__(self, type, label, y, height=0, id=None, callback=None, src=None):
         self.type = type
         self.label = label
         self.y = y
         self.height = height
         self.id = id
+        self.src = src
         self.callback = callback
-        self.data = {}
 
     def contains(self, x, y):
         """Checks if mouse is in widget"""
-        return 0 <= x < WIDTH and self.y <= y < self.y + self.height
+        return STYLE["margin"] <= x < (WIDTH - STYLE["margin"]) and self.y <= y < self.y + self.height
 
     def set_position(self, y):
         """Sets widget screen position"""
@@ -75,6 +77,7 @@ def build_widgets(dom):
     widgets = []
     for element in dom:
         wid = element.attrib.get("id")
+        wsrc = element.attrib.get("src")
         match element.tag:
             case "button":
                 w = Widget("button", element.attrib.get("label",""), 0, 32, id=wid)
@@ -82,11 +85,13 @@ def build_widgets(dom):
                 w = Widget("label", element.text or "", 0, 24, id=wid)
             case "separator":
                 w = Widget("separator", "", 0, 1, id=wid)
+            case "image":
+                w = Widget("image", "", 0, 128, id=wid, src=wsrc)
             case _:
                 continue
         widgets.append(w)
         if wid:
-            _widget_registry[wid] = w  # ← register the widget globally
+            _widget_registry[wid] = w
     return widgets
 
 
@@ -149,7 +154,7 @@ class renderer:
                 font,
                 label,
                 (STYLE["margin"] + STYLE["padding"]),
-                y + 8,
+                y + 7,
                 renderer.hex_to_argb(STYLE["text"]),
             )
             return h
@@ -178,6 +183,31 @@ class renderer:
                 sdl_renderer, 0, y, WIDTH, y
             )
             return 1
+        
+        @staticmethod
+        def image(sdl_renderer, y, src):
+            if src is None:
+                file_path = "missing.png"
+            else:
+                file_path = src
+            try:
+                surface = sdl2.ext.load_image(file_path)
+            except PIL.UnidentifiedImageError:
+                print(f"Failed to load image: {file_path}")
+                return
+            except FileNotFoundError:
+                file_path = "missing.png"
+                surface = sdl2.ext.load_image(file_path)
+
+            texture = sdl2.SDL_CreateTextureFromSurface(sdl_renderer, surface)
+
+            sdl2.SDL_FreeSurface(surface)
+            
+            rect = sdl2.SDL_Rect(STYLE["margin"], y, 128, 128)
+            sdl2.SDL_RenderCopy(sdl_renderer, texture, None, rect)
+
+            sdl2.SDL_DestroyTexture(texture)
+
 
     @staticmethod
     def draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down):
@@ -195,6 +225,8 @@ class renderer:
                     renderer.draw.label(sdl_renderer, font, w.y, w.label)
                 case "separator":
                     renderer.draw.separator(sdl_renderer, w.y)
+                case "image":
+                    renderer.draw.image(sdl_renderer, w.y, w.src)
 
 
     def draw_text(renderer, font, text, x, y, color):
@@ -224,7 +256,8 @@ def start(xml_file="demo.xml"):
     """Main UI Function"""
     sdl2.ext.init()
     sdlttf.TTF_Init()
-    font = sdlttf.TTF_OpenFont(b"DejaVuSans.ttf", 12)
+    font = sdlttf.TTF_OpenFont(b"NotoSans.ttf", 12)
+    redraw = True
 
     dom = parser.parse(xml_file)
 
@@ -257,25 +290,39 @@ def start(xml_file="demo.xml"):
             mouse_x = event.motion.x
             mouse_y = event.motion.y
 
+            old_selected = selected_index
+            selected_index = None
+
             for i, widget in enumerate(widgets):
                 if widget.contains(mouse_x, mouse_y):
                     selected_index = i
                     break
 
+
+            if selected_index != old_selected:
+                redraw = True
+
             if event.type == sdl2.SDL_QUIT:
                 running = False
             elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
                 mouse_down = True
+                redraw = True
             elif event.type == sdl2.SDL_MOUSEBUTTONUP:
                 mouse_down = False
+                redraw = True
                 for w in widgets:
                     if w.type == "button" and w.contains(event.button.x, event.button.y):
                         if w.callback:
                             w.callback()
+                            redraw = True
 
-        renderer.draw.background(sdl_renderer)
-        renderer.draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down)
-        sdl2.SDL_RenderPresent(sdl_renderer)
+
+        if redraw:
+            renderer.draw.background(sdl_renderer)
+            renderer.draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down)
+            sdl2.SDL_RenderPresent(sdl_renderer)
+
+            redraw = False
 
         
     sdl2.ext.quit()

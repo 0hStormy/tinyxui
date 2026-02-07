@@ -60,9 +60,16 @@ async def song_updater():
 
     while True:
         song = await get_current_song()
+        song_meta = await client.currentsong()
         song_label.set_label(song["title"])
         album_label.set_label(song["album"])
         artist_label.set_label(song["artist"])
+        try:
+            cover_art = await client.albumart(song_meta["file"])
+            with open("out.png", "wb") as f:
+                f.write(cover_art["binary"])
+        except KeyError:
+            pass
         await asyncio.sleep(1)
 
 def start_asyncio_loop():

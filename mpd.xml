@@ -2,6 +2,7 @@
 <tinyxui title="TinyXUI MPD Client">
     <label>TinyXUI MPD Client</label>
     <separator />
+    <image src="out.png" />
     <label id="song_label">Unknown Song</label>
     <label id="album_label">Unknown Album</label>
     <label id="artist_label">Unknown Artist</label>
