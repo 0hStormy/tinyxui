@@ -6,6 +6,7 @@ by 0Stormy
 import asyncio
 from threading import Thread
 from mpd.asyncio import MPDClient
+import mpd.base as MPDBase
 import xui as xui
 
 client = MPDClient()
@@ -69,6 +70,8 @@ async def song_updater():
             with open("out.png", "wb") as f:
                 f.write(cover_art["binary"])
         except KeyError:
+            pass
+        except MPDBase.CommandError:
             pass
         await asyncio.sleep(1)
 

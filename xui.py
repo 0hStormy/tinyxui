@@ -258,8 +258,15 @@ def start(xml_file="demo.xml"):
     sdlttf.TTF_Init()
     font = sdlttf.TTF_OpenFont(b"NotoSans.ttf", 12)
     redraw = True
+    last_tick = sdl2.SDL_GetTicks()
+    interval = 100
 
     dom = parser.parse(xml_file)
+
+    sdl2.SDL_SetHint(
+        sdl2.SDL_HINT_RENDER_SCALE_QUALITY,
+        b"1"
+    )
 
     window = sdl2.ext.Window(
         dom.attrib["title"],
@@ -270,7 +277,7 @@ def start(xml_file="demo.xml"):
     sdl_renderer = sdl2.SDL_CreateRenderer(
         window.window,
         -1,
-        sdl2.SDL_RENDERER_SOFTWARE,
+        sdl2.SDL_RENDERER_ACCELERATED,
     )
 
     event = sdl2.SDL_Event()
@@ -316,6 +323,10 @@ def start(xml_file="demo.xml"):
                             w.callback()
                             redraw = True
 
+        current_tick = sdl2.SDL_GetTicks()
+        if current_tick - last_tick >= interval:
+            redraw = True
+            last_tick = current_tick
 
         if redraw:
             renderer.draw.background(sdl_renderer)
