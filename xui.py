@@ -1,18 +1,14 @@
-"""
-TinyXUI. A open source, fast, and light GUI toolkit for Python.
-by 0Stormy
-"""
-
-
-import xml.etree.ElementTree as ET
+from txm import AST as txm
+import layout
 import sdl2
 import sdl2.ext
-import sdl2.sdlttf as sdlttf
-import PIL
+import sdl2.sdlttf
 
 
-WIDTH = 640
-HEIGHT = 480
+bindings = {}
+widget_map = {}
+
+
 STYLE = {
     "bg": "#eff0f1",
     "accent": "#3daee9",
@@ -20,324 +16,261 @@ STYLE = {
     "separator": "#d1d2d3",
     "text": "#232629",
     "highlight": "#badcee",
-    "padding": 4,
-    "margin": 4
 }
 
-callbacks = {}
-_widget_registry = {}
 
-def bind_button(id, func):
-    """Bind a function to a button with a given ID"""
-    callbacks[id] = func
-
-
-class parser:
-    @staticmethod
-    def parse(file):
-        """Parses TinyXUI XML"""
-        with open(file, "r") as f:
-            xml_data = f.read()
-        root = ET.fromstring(xml_data)
-        return root
-
-class Widget:
-    def __init__(self, type, label, y, height=0, id=None, callback=None, src=None):
-        self.type = type
-        self.label = label
-        self.y = y
-        self.height = height
-        self.id = id
-        self.src = src
-        self.callback = callback
-
-    def contains(self, x, y):
-        """Checks if mouse is in widget"""
-        return STYLE["margin"] <= x < (WIDTH - STYLE["margin"]) and self.y <= y < self.y + self.height
-
-    def set_position(self, y):
-        """Sets widget screen position"""
-        self.y = y
+def hex_to_argb(hex_code, alpha=255):
+    """
+    Converts hex codes to SDL ARGB (r, g, b, alpha)
     
-    def set_attribute(self, attr, value):
-        """Set an attribute if it exists"""
-        if hasattr(self, attr):
-            setattr(self, attr, value)
-        else:
-            raise AttributeError(f"Widget has no attribute '{attr}'")
+    :param hex_code: Hex code for color, Ex: #FFF or #432fca
+    :param alpha: Transparancy level, 255 is opaque, 0 is invisible
+    """
+    hex_code = hex_code.lstrip("#")
+    if len(hex_code) == 3:
+        hex_code = "".join(c * 2 for c in hex_code)
+    r = int(hex_code[0:2], 16)
+    g = int(hex_code[2:4], 16)
+    b = int(hex_code[4:6], 16)
+    return sdl2.SDL_Color(r, g, b, alpha)
 
-    def set_label(self, value):
-        """Set arbitrary label for this widget"""
-        self.label = value
+
+def draw_widget(widget):
+    """
+    Draws a provided widget on the screen
     
+    :param widget: Widget object
+    """
+    match widget.name:
+        case "root" | "box":
+            if widget.name == "root":
+                color = hex_to_argb(STYLE["bg"])
+                sdl2.SDL_SetRenderDrawColor(sdl_renderer,color.r, color.g, 
+                                            color.b, 255)
+                sdl2.SDL_RenderClear(sdl_renderer)
 
-def build_widgets(dom):
-    """Builds all widgets in XML file"""
-    widgets = []
-    for element in dom:
-        wid = element.attrib.get("id")
-        wsrc = element.attrib.get("src")
-        match element.tag:
-            case "button":
-                w = Widget("button", element.attrib.get("label",""), 0, 32, id=wid)
-            case "label":
-                w = Widget("label", element.text or "", 0, 24, id=wid)
-            case "separator":
-                w = Widget("separator", "", 0, 1, id=wid)
-            case "image":
-                w = Widget("image", "", 0, 128, id=wid, src=wsrc)
-            case _:
-                continue
-        widgets.append(w)
-        if wid:
-            _widget_registry[wid] = w
-    return widgets
-
-
-def layout_widgets(widgets):
-    """Creates widgets layout"""
-    y = 0
-    for w in widgets:
-        w.set_position(y)
-        y += w.height + STYLE["margin"]
-
-def widget_from_id(widget_id):
-    """Return the live widget from the currently running UI"""
-    w = _widget_registry.get(widget_id)
-    if not w:
-        raise ValueError(f"No widget with id '{widget_id}' found")
-    return w
-
-class renderer:
-    class draw:
-        @staticmethod
-        def background(sdl_renderer):
-            """Draws background"""
-            color = renderer.hex_to_argb(STYLE["bg"])
-            sdl2.SDL_SetRenderDrawColor(
-                sdl_renderer, color.r, color.g, color.b, 255
+        case "label":
+            color = hex_to_argb(STYLE["text"])
+            surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(
+                font, str(widget.data).encode("utf-8"), color
             )
-            sdl2.SDL_RenderClear(sdl_renderer)
+            if not surface:
+                print("Failed to render text")
+                return
 
-        @staticmethod
-        def button(sdl_renderer, font, y, label="", selected=False, mouse_down=False):
-            """Draws a clickable button"""
-            h = 32
+            texture = sdl2.SDL_CreateTextureFromSurface(sdl_renderer, surface)
+            if not texture:
+                print("Failed to create texture")
+                sdl2.SDL_FreeSurface(surface)
+                return
 
-            if selected:
-                bg = STYLE["accent"] if mouse_down else STYLE["highlight"]
+            rect = sdl2.SDL_Rect(widget.x, widget.y, surface.contents.w,
+                                surface.contents.h)
+            sdl2.SDL_RenderCopy(sdl_renderer, texture, None, rect)
+            sdl2.SDL_FreeSurface(surface)
+            sdl2.SDL_DestroyTexture(texture)
+
+        case "image":
+            if not hasattr(widget, "texture_cache"):
+                file_path = widget.attributes.get("src", "missing.png")
+                surface = sdl2.ext.load_image(file_path)
+                widget.texture_cache = sdl2.SDL_CreateTextureFromSurface(
+                    sdl_renderer, surface)
+                widget.texture_w, widget.texture_h = surface.w, surface.h
+
+                sdl2.SDL_FreeSurface(surface)
+
+            rect = sdl2.SDL_Rect(widget.x, widget.y, widget.width, widget.height)
+            sdl2.SDL_RenderCopy(sdl_renderer, widget.texture_cache, None, rect)
+
+        case "button":
+            bg = STYLE["button"]
+            border = STYLE["separator"]
+            if widget.hovered:
+                bg = STYLE["highlight"]
                 border = STYLE["accent"]
-            else:
-                bg = STYLE["button"]
-                border = STYLE["separator"]
+            if widget.active:
+                bg = STYLE["accent"]
+                border = STYLE["accent"]
 
-            bgc = renderer.hex_to_argb(bg)
-            bc = renderer.hex_to_argb(border)
+            bgc = hex_to_argb(bg)
+            bc = hex_to_argb(border)
 
             sdl2.SDL_SetRenderDrawColor(
                 sdl_renderer, bgc.r, bgc.g, bgc.b, 255
             )
             sdl2.SDL_RenderFillRect(
-                sdl_renderer, sdl2.SDL_Rect(STYLE["margin"], y, (WIDTH - (STYLE["margin"] * 2)), h)
+                sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
+                                            widget.width, widget.height)
             )
 
             sdl2.SDL_SetRenderDrawColor(
                 sdl_renderer, bc.r, bc.g, bc.b, 255
             )
             sdl2.SDL_RenderDrawRect(
-                sdl_renderer, sdl2.SDL_Rect(STYLE["margin"], y, (WIDTH - (STYLE["margin"] * 2)), h)
+                sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
+                                            widget.width, widget.height)
             )
-
-            renderer.draw_text(
-                sdl_renderer,
-                font,
-                label,
-                (STYLE["margin"] + STYLE["padding"]),
-                y + 7,
-                renderer.hex_to_argb(STYLE["text"]),
-            )
-            return h
-
-        @staticmethod
-        def label(sdl_renderer, font, y, label=""):
-            """Draws a text label"""
-            renderer.draw_text(
-                sdl_renderer,
-                font,
-                label,
-                STYLE["padding"],
-                y + 4,
-                renderer.hex_to_argb(STYLE["text"]),
-            )
-            return 24
-
-        @staticmethod
-        def separator(sdl_renderer, y):
-            """Draws a separator line"""
-            c = renderer.hex_to_argb(STYLE["separator"])
-            sdl2.SDL_SetRenderDrawColor(
-                sdl_renderer, c.r, c.g, c.b, 255
-            )
-            sdl2.SDL_RenderDrawLine(
-                sdl_renderer, 0, y, WIDTH, y
-            )
-            return 1
         
-        @staticmethod
-        def image(sdl_renderer, y, src):
-            if src is None:
-                file_path = "missing.png"
-            else:
-                file_path = src
-            try:
-                surface = sdl2.ext.load_image(file_path)
-            except PIL.UnidentifiedImageError:
-                print(f"Failed to load image: {file_path}")
-                return
-            except FileNotFoundError:
-                file_path = "missing.png"
-                surface = sdl2.ext.load_image(file_path)
+        case "separator":
+            color = hex_to_argb(STYLE["separator"])
+            sdl2.SDL_SetRenderDrawColor(
+                sdl_renderer, color.r, color.g, color.b, 255
+            )
+            sdl2.SDL_RenderFillRect(
+                sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
+                                            widget.width, widget.height)
+            )
 
-            texture = sdl2.SDL_CreateTextureFromSurface(sdl_renderer, surface)
-
-            sdl2.SDL_FreeSurface(surface)
-            
-            rect = sdl2.SDL_Rect(STYLE["margin"], y, 128, 128)
-            sdl2.SDL_RenderCopy(sdl_renderer, texture, None, rect)
-
-            sdl2.SDL_DestroyTexture(texture)
+    # Draw children
+    for child in widget.children:
+        draw_widget(child)
 
 
-    @staticmethod
-    def draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down):
-        """Draws each widget in order"""
-        for i, w in enumerate(widgets):
-            selected = i == selected_index
-            match w.type:
-                case "folder":
-                    renderer.draw.folder(sdl_renderer, font, w.y, w.label, selected)
-                case "button":
-                    renderer.draw.button(
-                        sdl_renderer, font, w.y, w.label, selected, mouse_down
-                    )
-                case "label":
-                    renderer.draw.label(sdl_renderer, font, w.y, w.label)
-                case "separator":
-                    renderer.draw.separator(sdl_renderer, w.y)
-                case "image":
-                    renderer.draw.image(sdl_renderer, w.y, w.src)
+def build_widget_map(widget):
+    """
+    Recursively build a mapping of widget IDs to widget objects.
+    
+    :param widget: Widget object
+    """
+    wid = widget.attributes.get("id")
+    if wid:
+        widget_map[wid] = widget
+    for child in widget.children:
+        build_widget_map(child)
 
 
-    def draw_text(renderer, font, text, x, y, color):
-        """Draws bare text, should be used with a widget"""
-        surface = sdlttf.TTF_RenderUTF8_Blended(font, text.encode("utf-8"), color)
-        texture = sdl2.SDL_CreateTextureFromSurface(renderer, surface)
-
-        rect = sdl2.SDL_Rect(x, y, surface.contents.w, surface.contents.h)
-        sdl2.SDL_RenderCopy(renderer, texture, None, rect)
-
-        sdl2.SDL_FreeSurface(surface)
-        sdl2.SDL_DestroyTexture(texture)
+def bind_widget(widget_id, callback):
+    """
+    Bind a function to a widget by its ID
+    
+    :param widget_id: ID of specified widget
+    :param callback: Function to run
+    """
+    bindings[widget_id] = callback
 
 
-    def hex_to_argb(hex_code, alpha=255):
-        """Converts hex codes to SDL ARGB (r, g, b, alpha)"""
-        hex_code = hex_code.lstrip("#")
-        if len(hex_code) == 3:
-            hex_code = "".join(c * 2 for c in hex_code)
-        r = int(hex_code[0:2], 16)
-        g = int(hex_code[2:4], 16)
-        b = int(hex_code[4:6], 16)
-        return sdl2.SDL_Color(r, g, b, alpha)
+def set_data(widget_id, data):
+    """
+    Set inner data via a widget's ID
+    
+    :param widget_id: ID of specified widget
+    :param data: Data to replace with
+    """
+    widget = widget_map.get(widget_id)
+    if widget:
+        widget.data = data
+        return True
+    return False
 
 
-def start(xml_file="demo.xml"):
-    """Main UI Function"""
+def refresh_image(widget_id):
+    """
+    Force an image widget to reload from disk
+    
+    :param widget_id: ID of specified widget
+    """
+    widget = widget_map.get(widget_id)
+    if not widget:
+        return False
+
+    # Remove the cached texture so draw_widget recreates it
+    if hasattr(widget, "texture_cache"):
+        import sdl2
+        sdl2.SDL_DestroyTexture(widget.texture_cache)
+        del widget.texture_cache
+
+    return True
+
+
+def handle_event(event, widget):
+    """
+    Recursively check widgets for a click event and call bound function
+    
+    :param event: SDL event object
+    :param widget: Widget object
+    """
+    mouse_x = event.button.x
+    mouse_y = event.button.y
+
+    # Check if mouse is inside this widget
+    if widget.x <= mouse_x <= widget.x + widget.width and \
+        widget.y <= mouse_y <= widget.y + widget.height:
+        if event.type == sdl2.SDL_MOUSEBUTTONDOWN:
+            widget.active = True
+        elif event.type == sdl2.SDL_MOUSEBUTTONUP:
+            widget.active = False
+            widget_id = widget.attributes.get("id")
+            if widget_id and widget_id in bindings:
+                bindings[widget_id]()  # call bound function
+        else:
+            widget.hovered = True
+            widget.active = False
+    else:
+        widget.hovered = False
+        widget.active = False
+
+    # Recurse into children
+    for child in widget.children:
+        handle_event(event, child)
+
+
+def start(file):
+    """
+    Public function to start a XUI instance
+    
+    :param file: TXM markup file to read from
+    """
+    global settings
+    global widgets
+    global font
+    global sdl_renderer
+    ast = txm.generate_ast(file)
+    settings = ast[0]
+    widgets = ast[1]
+    build_widget_map(widgets)
+    running = True
+
+    # Initialize SDL
     sdl2.ext.init()
-    sdlttf.TTF_Init()
-    font = sdlttf.TTF_OpenFont(b"NotoSans.ttf", 12)
-    redraw = True
-    last_tick = sdl2.SDL_GetTicks()
-    interval = 100
+    sdl2.sdlttf.TTF_Init()
+    font = sdl2.sdlttf.TTF_OpenFont(b"NotoSans.ttf", 13)
 
-    dom = parser.parse(xml_file)
-
-    sdl2.SDL_SetHint(
-        sdl2.SDL_HINT_RENDER_SCALE_QUALITY,
-        b"1"
-    )
-
+    # Initialize window and renderer
     window = sdl2.ext.Window(
-        dom.attrib["title"],
-        size=(WIDTH, HEIGHT),
+        settings["window_title"],
+        size=(settings["width"], settings["height"]),
         flags=sdl2.SDL_WINDOW_SHOWN,
     )
-
     sdl_renderer = sdl2.SDL_CreateRenderer(
         window.window,
         -1,
-        sdl2.SDL_RENDERER_ACCELERATED,
+        sdl2.SDL_RENDERER_ACCELERATED | sdl2.SDL_RENDERER_PRESENTVSYNC,
     )
-
     event = sdl2.SDL_Event()
-    running = True
-
-    widgets = build_widgets(dom)
-    layout_widgets(widgets)
-    for w in widgets:
-        if w.id in callbacks:
-            w.callback = callbacks[w.id]
-            
-    selected_index = 0
-    mouse_down = False
 
     while running:
         while sdl2.SDL_PollEvent(event):
-            mouse_x = event.motion.x
-            mouse_y = event.motion.y
-
-            old_selected = selected_index
-            selected_index = None
-
-            for i, widget in enumerate(widgets):
-                if widget.contains(mouse_x, mouse_y):
-                    selected_index = i
-                    break
-
-
-            if selected_index != old_selected:
-                redraw = True
-
             if event.type == sdl2.SDL_QUIT:
                 running = False
-            elif event.type == sdl2.SDL_MOUSEBUTTONDOWN:
-                mouse_down = True
-                redraw = True
-            elif event.type == sdl2.SDL_MOUSEBUTTONUP:
-                mouse_down = False
-                redraw = True
-                for w in widgets:
-                    if w.type == "button" and w.contains(event.button.x, event.button.y):
-                        if w.callback:
-                            w.callback()
-                            redraw = True
 
-        current_tick = sdl2.SDL_GetTicks()
-        if current_tick - last_tick >= interval:
-            redraw = True
-            last_tick = current_tick
+            handle_event(event, widgets)
 
-        if redraw:
-            renderer.draw.background(sdl_renderer)
-            renderer.draw_widgets(sdl_renderer, font, widgets, selected_index, mouse_down)
-            sdl2.SDL_RenderPresent(sdl_renderer)
 
-            redraw = False
+        sdl2.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255)
+        sdl2.SDL_RenderClear(sdl_renderer)
+        layout.compute_layout(widgets, settings=settings, font=font)
+        draw_widget(widgets)
 
-        
+        sdl2.SDL_RenderPresent(sdl_renderer)
+
+    sdl2.SDL_DestroyRenderer(sdl_renderer)
+    window.close()
     sdl2.ext.quit()
 
 if __name__ == "__main__":
-    """Errors if you try to run TinyXUI on its own"""
+    """
+    Errors if you try to run TinyXUI on its own
+    """
     print("Do not run TinyXUI on its own!")
     print("Import it into another codebase to use it.")

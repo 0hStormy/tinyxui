@@ -1,0 +1,56 @@
+// XSS is a lot like CSS
+// Unlike CSS though, everything lives and extends from the root widget
+// XSS currently is not implemented into TinyXUI, this is just a draft for syntax
+root {
+    background: #eff0f1;
+
+    label {
+        color: #232629;
+    }
+
+    button {
+        border-color: #d1d2d3;
+        border-width: 1px;
+        border-radius: 6px;
+        // There's no background-color and background-image
+        // Just a single background parameter
+        background: #fcfcfc;
+
+        margin: 4px;
+
+        // Widget events are nested inside the widget like this
+        :hover {
+            border-color: #3daee9;
+            background: #badcee;
+        }
+
+        // :active extends from :hover
+        :active {
+            background: #3daee9;
+        }
+    }
+
+    icon {
+        // Used for symbolic icons in the context of an icon
+        color: #232629;
+        // Alias for width and height
+        size: 24px;
+    }
+    
+    image {
+        border-radius: 6px;
+    }
+
+    separator {
+        color: #d1d2d3;
+        
+        // Classes are nested inside
+        .horizontal {
+            height: 1px;
+        }
+
+        .vertical {
+            width: 1px;
+        }
+    }
+}

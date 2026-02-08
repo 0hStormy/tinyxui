@@ -1,92 +1,91 @@
-"""
-Example MPD Client with python-mpd2 and TinyXUI.
-by 0Stormy
-"""
-
 import asyncio
-from threading import Thread
-from mpd.asyncio import MPDClient
+from mpd import MPDClient
 import mpd.base as MPDBase
-import xui as xui
+import xui
+import threading
+
+
+last_song_file = None
+
 
 client = MPDClient()
+client.connect("localhost", 6600)
 
-async def connect_mpd():
-    await client.connect("localhost", 6600)
 
-async def get_current_song():
-    song = await client.currentsong()
-    status = await client.status()
+def get_current_song():
+    song = client.currentsong()
+    status = client.status()
     state = status.get("state", "stop")
     return {
         "title": song.get("title", "Unknown"),
         "artist": song.get("artist", "Unknown"),
         "album": song.get("album", "Unknown"),
-        "state": state
+        "state": state,
+        "file": song["file"]
     }
 
-async def play_song():
-    playback_button = xui.widget_from_id("playback_toggle")
-    status = await client.status()
+
+def play_song():
+    status = client.status()
     if status.get("state") == "pause":
-        await client.play()
-        playback_button.set_attribute("label", "Pause")
+        client.play()
     else:
-        await client.pause()
-        playback_button.set_attribute("label", "Play")
+        client.pause()
 
-async def next_song():
-    await client.next()
 
-async def previous_song():
-    await client.previous()
+def next_song():
+    client.next()
 
-def async_button(fn):
-    def wrapper(*args, **kwargs):
-        asyncio.run_coroutine_threadsafe(fn(*args, **kwargs), loop)
-    return wrapper
 
-async def wait_for_widget(widget_id):
+def previous_song():
+    client.previous()
+
+
+async def update_loop():
+    global last_song_file
     while True:
         try:
-            return xui.widget_from_id(widget_id)
-        except ValueError:
-            await asyncio.sleep(0.1)
+            song = get_current_song()
+            current_file = song["file"]
 
-async def song_updater():
-    await connect_mpd()
-    song_label = await wait_for_widget("song_label")
-    album_label = await wait_for_widget("album_label")
-    artist_label = await wait_for_widget("artist_label")
+            if current_file != last_song_file:
+                # Song has changed
+                last_song_file = current_file
 
-    while True:
-        song = await get_current_song()
-        song_meta = await client.currentsong()
-        song_label.set_label(song["title"])
-        album_label.set_label(song["album"])
-        artist_label.set_label(song["artist"])
-        try:
-            cover_art = await client.albumart(song_meta["file"])
-            with open("out.png", "wb") as f:
-                f.write(cover_art["binary"])
-        except KeyError:
+                # Update labels
+                xui.set_data("song_label", song["title"])
+                xui.set_data("artist_label", song["artist"])
+                xui.set_data("album_label", song["album"])
+
+                # Update album art
+                try:
+                    cover_art = client.albumart(song["file"])
+                    with open("out.png", "wb") as f:
+                        f.write(cover_art["binary"])
+                    xui.refresh_image("cover_art")
+                except KeyError:
+                    pass
+                except MPDBase.CommandError:
+                    pass
+
+        except Exception:
+            # GUI not ready yet, or network hiccup
             pass
-        except MPDBase.CommandError:
-            pass
-        await asyncio.sleep(1)
 
-def start_asyncio_loop():
-    global loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(song_updater())
-    loop.run_forever()
+        await asyncio.sleep(0.1)
 
 
-xui.bind_button("playback_toggle", async_button(play_song))
-xui.bind_button("next_button", async_button(next_song))
-xui.bind_button("previous_button", async_button(previous_song))
+# Run XUI in a separate thread
+def run_xui():
+    xui.start("mpd.txm")
+
+
+# Bind buttons
+xui.bind_widget("playback_button", play_song)
+xui.bind_widget("next_button", next_song)
+xui.bind_widget("previous_button", previous_song)
+
 
 if __name__ == "__main__":
-    Thread(target=start_asyncio_loop, daemon=True).start()
-    xui.start("mpd.xml")
+    threading.Thread(target=run_xui, daemon=True).start()
+    asyncio.run(update_loop())
