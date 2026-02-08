@@ -1,0 +1,47 @@
+root {
+    background: #eff0f1;
+}
+
+label {
+    color: #232629;
+}
+
+button {
+    border-color: #d1d2d3;
+    border-width: 1px;
+    border-radius: 4px;
+    background: #fcfcfc;
+}
+
+button:hover {
+    border-color: #3daee9;
+    background: #fcfcfc;
+}
+
+button:active {
+    border-color: #3daee9;
+    background: #badcee;
+}
+
+icon {
+    color: #232629;
+}
+
+image {
+    border-radius: 6px;
+}
+
+separator {
+    background: #d1d2d3;
+    border-width: 0px;
+}
+
+separator.horizontal {
+    height: 1px;
+    width: 100%;
+}
+
+separator.vertical {
+    width: 1px;
+    height: 100%;
+}

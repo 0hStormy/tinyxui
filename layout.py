@@ -90,6 +90,10 @@ def measure(widget, font):
         w = int(widget.attributes.get("width", 128))
         h = 1
         return (w, h)
+    elif widget.name == "spacer":
+        w = int(widget.attributes.get("width", 0))
+        h = int(widget.attributes.get("height", 0))
+        return (w, h)
         
     return (0, 0)
 

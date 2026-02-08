@@ -165,6 +165,8 @@ class AST:
                 stack.append(widget)
 
         return settings, root
-
-            
-AST.generate_ast("mpd.txm")
+    
+if __name__ == "__main__":
+    """Errors if you try to run TinyXUI on its own"""
+    print("Do not run TinyXUI's AST engine on its own!")
+    print("Import it into another codebase to use it.")

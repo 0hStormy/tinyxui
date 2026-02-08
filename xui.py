@@ -3,6 +3,7 @@ import layout
 import sdl2
 import sdl2.ext
 import sdl2.sdlttf
+import style_provider
 
 
 bindings = {}
@@ -41,16 +42,15 @@ def draw_widget(widget):
     
     :param widget: Widget object
     """
+    ast = style_provider.generate_ast("default.css")
     match widget.name:
-        case "root" | "box":
-            if widget.name == "root":
-                color = hex_to_argb(STYLE["bg"])
-                sdl2.SDL_SetRenderDrawColor(sdl_renderer,color.r, color.g, 
-                                            color.b, 255)
-                sdl2.SDL_RenderClear(sdl_renderer)
-
         case "label":
-            color = hex_to_argb(STYLE["text"])
+            text_color = style_provider.Provider.get_property(
+                ast,
+                "label",
+                "color"
+            )
+            color = style_provider.hex_to_argb(text_color)
             surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(
                 font, str(widget.data).encode("utf-8"), color
             )
@@ -83,45 +83,8 @@ def draw_widget(widget):
             rect = sdl2.SDL_Rect(widget.x, widget.y, widget.width, widget.height)
             sdl2.SDL_RenderCopy(sdl_renderer, widget.texture_cache, None, rect)
 
-        case "button":
-            bg = STYLE["button"]
-            border = STYLE["separator"]
-            if widget.hovered:
-                bg = STYLE["highlight"]
-                border = STYLE["accent"]
-            if widget.active:
-                bg = STYLE["accent"]
-                border = STYLE["accent"]
-
-            bgc = hex_to_argb(bg)
-            bc = hex_to_argb(border)
-
-            sdl2.SDL_SetRenderDrawColor(
-                sdl_renderer, bgc.r, bgc.g, bgc.b, 255
-            )
-            sdl2.SDL_RenderFillRect(
-                sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
-                                            widget.width, widget.height)
-            )
-
-            sdl2.SDL_SetRenderDrawColor(
-                sdl_renderer, bc.r, bc.g, bc.b, 255
-            )
-            sdl2.SDL_RenderDrawRect(
-                sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
-                                            widget.width, widget.height)
-            )
-        
-        case "separator":
-            color = hex_to_argb(STYLE["separator"])
-            sdl2.SDL_SetRenderDrawColor(
-                sdl_renderer, color.r, color.g, color.b, 255
-            )
-            sdl2.SDL_RenderFillRect(
-                sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
-                                            widget.width, widget.height)
-            )
-
+        case _:
+            style_provider.Provider.draw(ast, widget, sdl_renderer=sdl_renderer)
     # Draw children
     for child in widget.children:
         draw_widget(child)

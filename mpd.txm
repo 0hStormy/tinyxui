@@ -4,7 +4,7 @@
 // ! is used to specify a document setting
 !window_title = "TinyXUI MPD Client"
 !width = 640
-!height = 320
+!height = 240
 
 // Some widgets such as box support widget nesting
 // Multiple attributes can be added at once with a comma between them
@@ -14,6 +14,7 @@ box(direction="vertical", align="center", expand=true) {
         // center will center widgets horizontally and vertically
         box(direction="horizontal", align="center") {
             image(src="out.png", id="cover_art", width=128, height=128)
+            spacer(width=12)
             // Margins are always read as [left,right,top,bottom]
             box(direction="vertical", vexpand=true, align="center") {
                 // Widgets always align to left by default
@@ -27,20 +28,25 @@ box(direction="vertical", align="center", expand=true) {
 
 box(direction="vertical", align="center", hexpand=true) {
     separator(hexpand=true)
+    spacer(height=6)
     box(direction="horizontal", align="center") {
         // Function callbacks are asigned in program code with bind_widget()
         // The size argument is alias for 1:1 width and height
-        button(id="previous_button", width=64, height=64) {
-            // Default icon size is 16px
-            // Icons are provided by your system icon theme if on Linux
-            // Otherwise TinyXUI will use a subset of Breeze icons
-            icon(src="media-skip-backward", size=32)
+        button(id="previous_button", width=64, height=32) {
+            spacer(height=5)
+            label(align="center") {"Prev"}
         }
-        button(id="playback_button", width=64, height=64) {
-            icon(src="media-playback-start", size=32)
+        spacer(width=6)
+        button(id="playback_button", width=64, height=32) {
+            spacer(height=5)
+            label(align="center") {"Pl/Ps"}
         }
-        button(id="next_button", width=64, height=64) {
-            icon(src="media-skip-forward", size=32)
+        spacer(width=6)
+        button(id="next_button", width=64, height=32) {
+            spacer(height=5)
+            label(align="center") {"Next"}
         }
     }
+    spacer(height=6)
 }
+
