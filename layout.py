@@ -55,8 +55,8 @@ def measure(widget, font):
         sdl2.SDL_FreeSurface(surface)
         return (w, h)
     elif widget.name == "button":
-        w = int(widget.attributes.get("width", 80))
-        h = int(widget.attributes.get("height", 64))
+        w = int(widget.attributes.get("width", 72))
+        h = int(widget.attributes.get("height", 32))
         return (w, h)
     elif widget.name == "icon":
         size = int(widget.attributes.get("size", 16))

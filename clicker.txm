@@ -1,0 +1,13 @@
+!window_title = "Clicker"
+
+box(direction="vertical", align="center", expand=true) {
+	label(id="click_label", align="center") {"Clicker: 0"}
+	box(direction="horizontal", align="center") {
+		button(id="click_down",align="center", width=32, height=32) {
+			label(align="center") {"-1"}
+		}
+		button(id="click_up",align="center", width=32, height=32) {
+			label(align="center") {"+1"}
+		}
+	}
+}
