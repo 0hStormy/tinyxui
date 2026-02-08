@@ -6,18 +6,9 @@ import sdl2.sdlttf
 import style_provider
 
 
+DEBUG_VIEW = False
 bindings = {}
 widget_map = {}
-
-
-STYLE = {
-    "bg": "#eff0f1",
-    "accent": "#3daee9",
-    "button": "#fcfcfc",
-    "separator": "#d1d2d3",
-    "text": "#232629",
-    "highlight": "#badcee",
-}
 
 
 def hex_to_argb(hex_code, alpha=255):
@@ -83,8 +74,30 @@ def draw_widget(widget):
             rect = sdl2.SDL_Rect(widget.x, widget.y, widget.width, widget.height)
             sdl2.SDL_RenderCopy(sdl_renderer, widget.texture_cache, None, rect)
 
+        case "box":
+            if DEBUG_VIEW is True:
+                sdl2.SDL_SetRenderDrawColor(
+                    sdl_renderer, 255, 0, 0, 255
+                )
+                sdl2.SDL_RenderDrawRect(
+                    sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
+                                                widget.width, widget.height)
+                )
+
+        case "spacer":
+            if DEBUG_VIEW is True:
+                sdl2.SDL_SetRenderDrawColor(
+                    sdl_renderer, 0, 0, 255, 255
+                )
+                sdl2.SDL_RenderDrawRect(
+                    sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
+                                                widget.width, widget.height)
+                )            
+
         case _:
             style_provider.Provider.draw(ast, widget, sdl_renderer=sdl_renderer)
+
+
     # Draw children
     for child in widget.children:
         draw_widget(child)

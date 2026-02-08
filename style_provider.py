@@ -42,7 +42,6 @@ class Provider:
 
                 bg = styles.get("background", "#ffffff")
                 border_color = styles.get("border-color", None)
-                border_width = styles.get("border-width", 1)
                 radius = styles.get("border-radius", 0)
                 
 
@@ -62,15 +61,15 @@ class Provider:
                         roundedBoxRGBA(
                             sdl_renderer,
                             x, y,
-                            x + w, y + h,
-                            radius,
+                            x + w - 1, y + h - 1,
+                            int(radius / 1.25),
                             bgc.r, bgc.g, bgc.b, 255
                         )
 
                 roundedRectangleRGBA(
                     sdl_renderer,
                     x, y,
-                    x + w + border_width, y + h + border_width,
+                    x + w - 1, y + h - 1,
                     radius,
                     bc.r, bc.g, bc.b, 255
                 )
