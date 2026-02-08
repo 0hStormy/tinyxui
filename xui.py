@@ -4,7 +4,7 @@ import sdl2
 import sdl2.ext
 import sdl2.sdlttf
 import style_provider
-
+import PIL
 
 DEBUG_VIEW = False
 bindings = {}
@@ -63,8 +63,12 @@ def draw_widget(widget):
 
         case "image":
             if not hasattr(widget, "texture_cache"):
-                file_path = widget.attributes.get("src", "missing.png")
-                surface = sdl2.ext.load_image(file_path)
+                try:
+                    file_path = widget.attributes.get("src", "missing.png")
+                    surface = sdl2.ext.load_image(file_path)
+                except PIL.UnidentifiedImageError:
+                    file_path = "missing.png"
+                    surface = sdl2.ext.load_image(file_path)   
                 widget.texture_cache = sdl2.SDL_CreateTextureFromSurface(
                     sdl_renderer, surface)
                 widget.texture_w, widget.texture_h = surface.w, surface.h

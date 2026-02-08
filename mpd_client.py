@@ -34,7 +34,10 @@ def play_song():
 
 
 def next_song():
-    client.next()
+    try:
+        client.next()
+    except MPDBase.CommandError:
+        return
 
 
 def previous_song():
@@ -67,6 +70,9 @@ async def update_loop():
                     pass
                 except MPDBase.CommandError:
                     pass
+                    with open("out.png", "wb") as f:
+                        f.write(b"")
+                    xui.refresh_image("cover_art")
 
         except Exception:
             # GUI not ready yet, or network hiccup
