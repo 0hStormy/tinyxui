@@ -87,8 +87,13 @@ def measure(widget, font):
             h = int(widget.attributes.get("height", 16))
             return (w, h)
     elif widget.name == "separator":
-        w = int(widget.attributes.get("width", 128))
-        h = 1
+        try:
+            if widget.attributes["direction"] == "vertical":
+                w = 1
+                h = int(widget.attributes.get("height", 128))
+        except KeyError:
+            w = int(widget.attributes.get("width", 128))
+            h = 1
         return (w, h)
     elif widget.name == "spacer":
         w = int(widget.attributes.get("width", 0))
@@ -254,6 +259,7 @@ def compute_layout(widget, x=0, y=0, width=None, height=None,
 
             compute_layout(child, cx, cy, cw, ch, settings=settings, font=font)
             cy += ch
+            
 
 if __name__ == "__main__":
     """Errors if you try to run TinyXUI on its own"""

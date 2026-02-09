@@ -211,7 +211,7 @@ def refresh_image(widget_id):
 def handle_event(event, widget):
     """
     Recursively check widgets for a click event and call bound function
-    
+
     :param event: SDL event object
     :param widget: Widget object
     """
@@ -219,18 +219,20 @@ def handle_event(event, widget):
     mouse_y = event.button.y
 
     # Check if mouse is inside this widget
-    if widget.x <= mouse_x <= widget.x + widget.width and \
-        widget.y <= mouse_y <= widget.y + widget.height:
+    mouse_inside = widget.x <= mouse_x <= widget.x + widget.width and \
+        widget.y <= mouse_y <= widget.y + widget.height
+
+    if mouse_inside:
         if event.type == sdl2.SDL_MOUSEBUTTONDOWN:
             widget.active = True
         elif event.type == sdl2.SDL_MOUSEBUTTONUP:
             widget.active = False
             widget_id = widget.attributes.get("id")
             if widget_id and widget_id in bindings:
-                bindings[widget_id]()  # call bound function
+                bindings[widget_id]()
         else:
-            widget.hovered = True
-            widget.active = False
+            if not widget.active:
+                widget.hovered = True
     else:
         widget.hovered = False
         widget.active = False
