@@ -9,11 +9,11 @@ box(direction="vertical", align="center", expand=true) {
 	spacer(height=6)
 	box(direction="horizontal", hexpand=true) {
 		spacer(hexpand=true)
-		button(id="click_down", width=32, height=32) {
+		button(id="click_down") {
 			label(align="center") {"-1"}
 		}
 		spacer(width=6)
-		button(id="click_up", width=32, height=32) {
+		button(id="click_up") {
 			label(align="center") {"+1"}
 		}
 		spacer(hexpand=true)
