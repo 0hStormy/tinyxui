@@ -1,7 +1,11 @@
 !window_title = "Clicker"
 
 box(direction="vertical", align="center", expand=true) {
-	label(id="click_label", align="center") {"Clicker: 0"}
+	box(direction="horizontal", hexpand=true) {
+		spacer(hexpand=true)
+		label(id="click_label") {"Clicker: 0"}
+		spacer(hexpand=true)
+	}
 	spacer(height=6)
 	box(direction="horizontal", hexpand=true) {
 		spacer(hexpand=true)

@@ -18,20 +18,24 @@ class Provider:
         sdl2.sdlgfx.aacircleRGBA(sdl_renderer, x, y, rad, r, g, b, a)
 
     @staticmethod
-    def roundedRect(sdl_renderer, x1, y1, x2, y2, rad, r, g, b, a):
+    def roundedRect(sdl_renderer, x1, y1, w, h, radius, r, g, b, a):
+
         circle_positions = [
-            (x1 + rad, y1 + rad),
-            (x2 - rad, y2 - rad),
-            (x1 + rad, y2 - rad),
-            (x2 - rad, y1 + rad),
+            (x1 + radius, y1 + radius),
+            (w - radius - 1, h - radius - 1),
+            (x1 + radius, h - radius - 1),
+            (w - radius - 1, y1 + radius),
         ]
         for i in circle_positions:
-            Provider.filledCircle(sdl_renderer, i[0], i[1], rad, r, g, b, a)
+            Provider.filledCircle(sdl_renderer, i[0], i[1], radius, r, g, b, a)
         sdl2.SDL_SetRenderDrawColor(
             sdl_renderer, r, g, b, a
         )
         sdl2.SDL_RenderFillRect(
-            sdl_renderer, sdl2.SDL_Rect(x1, y1 + rad, x2, y2)
+            sdl_renderer, sdl2.SDL_Rect(x1 + radius, y1, (w - x1 - (radius * 2)), (h - y1))
+        )
+        sdl2.SDL_RenderFillRect(
+            sdl_renderer, sdl2.SDL_Rect(x1, y1 + radius, (w - x1), (h - y1 - (radius * 2)))
         )
         
 
@@ -71,20 +75,12 @@ class Provider:
 
                 # Single border color fallback
                 border_color = styles.get("border-color", bg)
+                border_width = styles.get("border-width", 1)
                 bc = hex_to_argb(border_color)
                 bgc = hex_to_argb(bg)
 
                 x, y = widget.x, widget.y
                 w, h = widget.width, widget.height
-
-                # Draw background
-                Provider.roundedRect(
-                    sdl_renderer,
-                    x, y,
-                    x + w, y + h,
-                    int(radius / 1.25),
-                    bgc.r, bgc.g, bgc.b, 255
-                )
 
                 if radius == 0:
                     # Per-side border colors only if radius is 0
@@ -106,15 +102,22 @@ class Provider:
                     lineRGBA(sdl_renderer, x, y, x, y + h - 1, bc_left.r,
                              bc_left.g, bc_left.b, 255)
                 else:
-                    pass
-                    # For rounded rectangles, draw a single-color border
-                    #roundedRectangleRGBA(
-                     #   sdl_renderer,
-                      #  x, y,
-                       # x + w - 1, y + h - 1,
-                        #radius,
-                        #bc.r, bc.g, bc.b, 255
-                    #)
+                    Provider.roundedRect(
+                        sdl_renderer,
+                        x, y,
+                        x + w, y + h,
+                        radius,
+                        bc.r, bc.g, bc.b, 255     
+                    )
+
+                # Draw background
+                Provider.roundedRect(
+                    sdl_renderer,
+                    (x + border_width), (y + border_width),
+                    x + w - border_width, y + h - border_width,
+                    radius,
+                    bgc.r, bgc.g, bgc.b, 255
+                )
 
 
     @staticmethod
