@@ -70,8 +70,7 @@ def draw_widget(widget, settings):
                     file_path = widget.attributes.get("src", "missing.png")
                     surface = sdl2.ext.load_image(file_path)
                 except PIL.UnidentifiedImageError:
-                    file_path = "missing.png"
-                    surface = sdl2.ext.load_image(file_path)   
+                    return
                 widget.texture_cache = sdl2.SDL_CreateTextureFromSurface(
                     sdl_renderer, surface)
                 widget.texture_w, widget.texture_h = surface.w, surface.h
