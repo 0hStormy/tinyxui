@@ -1,6 +1,6 @@
 import re
 import sdl2
-from sdl2.sdlgfx import roundedBoxRGBA, roundedRectangleRGBA
+from sdl2.sdlgfx import roundedBoxRGBA, roundedRectangleRGBA, lineRGBA
 
 class Node:
     def __init__(self, selector=None, properties=None):
@@ -14,25 +14,28 @@ class Node:
 class Provider:
     @staticmethod
     def draw(ast, widget, sdl_renderer):
-        """
-        Draw a widget using TinyXUI's CSS style provider
-        
-        :param ast: CSS AST to search through
-        :param widget: Widget to draw
-        :param sdl_renderer: SDL renderer object
-        """
         for node in ast:
             if node.selector == widget.name:
+                
                 def get_styles_for_widget(widget_name):
-                    styles = {prop["property"]: prop["value"] for prop in Provider.get_properties_for_selector(ast, widget_name)}
+                    styles = {prop["property"]: prop["value"] for prop in
+                              Provider.get_properties_for_selector(
+                                  ast, widget_name)}
 
                     if widget.active:
-                        active_styles = {prop["property"]: prop["value"] for prop in Provider.get_properties_for_selector(ast, f"{widget_name}:active")}
+                        active_styles = {
+                            prop["property"]:
+                            prop["value"] for prop in
+                            Provider.get_properties_for_selector(
+                                ast, f"{widget_name}:active")}
                         if active_styles:
                             styles.update(active_styles)               
                     
                     elif widget.hovered:
-                        hover_styles = {prop["property"]: prop["value"] for prop in Provider.get_properties_for_selector(ast, f"{widget_name}:hover")}
+                        hover_styles = {
+                            prop["property"]: prop["value"] for prop in
+                            Provider.get_properties_for_selector(
+                                ast, f"{widget_name}:hover")}
                         if hover_styles:
                             styles.update(hover_styles)
 
@@ -41,38 +44,54 @@ class Provider:
                 styles = get_styles_for_widget(widget.name)
 
                 bg = styles.get("background", "#ffffff")
-                border_color = styles.get("border-color", None)
                 radius = styles.get("border-radius", 0)
-                
 
+                # Single border color fallback
+                border_color = styles.get("border-color", bg)
+                bc = hex_to_argb(border_color)
                 bgc = hex_to_argb(bg)
-                if border_color:
-                    bc = hex_to_argb(border_color)
-                else:
-                    bc = bgc
 
                 x, y = widget.x, widget.y
                 w, h = widget.width, widget.height
 
-                match widget.name:
-                    case "separator":
-                        pass
-                    case _:
-                        roundedBoxRGBA(
-                            sdl_renderer,
-                            x, y,
-                            x + w - 1, y + h - 1,
-                            int(radius / 1.25),
-                            bgc.r, bgc.g, bgc.b, 255
-                        )
-
-                roundedRectangleRGBA(
+                # Draw background
+                roundedBoxRGBA(
                     sdl_renderer,
                     x, y,
                     x + w - 1, y + h - 1,
-                    radius,
-                    bc.r, bc.g, bc.b, 255
+                    int(radius / 1.25),
+                    bgc.r, bgc.g, bgc.b, 255
                 )
+
+                if radius == 0:
+                    # Per-side border colors only if radius is 0
+                    bc_top = hex_to_argb(
+                        styles.get("border-top-color", border_color))
+                    bc_right = hex_to_argb(
+                        styles.get("border-right-color", border_color))
+                    bc_bottom = hex_to_argb(
+                        styles.get("border-bottom-color", border_color))
+                    bc_left = hex_to_argb(
+                        styles.get("border-left-color", border_color))
+
+                    lineRGBA(sdl_renderer, x, y, x + w - 1, y, bc_top.r,
+                             bc_top.g, bc_top.b, 255)
+                    lineRGBA(sdl_renderer, x + w - 1, y, x + w - 1, y + h - 1,
+                            bc_right.r, bc_right.g, bc_right.b, 255)
+                    lineRGBA(sdl_renderer, x, y + h - 1, x + w - 1, y + h - 1,
+                             bc_bottom.r, bc_bottom.g, bc_bottom.b, 255)
+                    lineRGBA(sdl_renderer, x, y, x, y + h - 1, bc_left.r,
+                             bc_left.g, bc_left.b, 255)
+                else:
+                    # For rounded rectangles, draw a single-color border
+                    roundedRectangleRGBA(
+                        sdl_renderer,
+                        x, y,
+                        x + w - 1, y + h - 1,
+                        radius,
+                        bc.r, bc.g, bc.b, 255
+                    )
+
 
     @staticmethod
     def get_property(ast, selector_name, property_name):
@@ -137,13 +156,16 @@ def generate_ast(stylesheet):
         properties = []
         for prop in properties_str.split(';'):
             if prop.strip():
-                property_match = re.match(r'([a-zA-Z\-]+)\s*:\s*(.+)', prop.strip())
+                property_match = re.match(
+                    r'([a-zA-Z\-]+)\s*:\s*(.+)', prop.strip())
                 if property_match:
                     property_name = property_match.group(1).strip()
                     property_value = property_match.group(2).strip()
                     if property_value.endswith("px"):
-                        property_value = int(property_value.removesuffix("px"))
-                    properties.append({'property': property_name, 'value': property_value})
+                        property_value = int(
+                            property_value.removesuffix("px"))
+                    properties.append(
+                        {'property': property_name, 'value': property_value})
         
         # Create a Node for each rule and add to the AST
         ast.append(Node(selector, properties))

@@ -1,0 +1,68 @@
+root {
+    background: #D5D1C9;
+}
+
+label {
+    color: #000000;
+}
+
+button {
+    border-top-color: #FFFFFF;
+    border-left-color: #FFFFFF;
+    border-bottom-color: #3E3E3E;
+    border-right-color: #3E3E3E;
+    border-width: 1px;
+    border-radius: 0px;
+    background: #D5D1C9;
+}
+
+button:hover {
+    border-color: #FFFFFF;
+    background: #e4e0d7;
+}
+
+button:active {
+    border-bottom-color: #FFFFFF;
+    border-right-color: #FFFFFF;
+    border-left-color: #3E3E3E;
+    border-top-color: #3E3E3E;
+}
+
+icon {
+    color: #000000;
+}
+
+image {
+    border-radius: 6px;
+}
+
+separator {
+    background: #d1d2d3;
+    border-width: 0px;
+}
+
+separator.horizontal {
+    height: 1px;
+    width: 100%;
+}
+
+separator.vertical {
+    width: 1px;
+    height: 100%;
+}
+
+progressbar {
+    border-bottom-color: #FFFFFF;
+    border-right-color: #FFFFFF;
+    border-left-color: #3E3E3E;
+    border-top-color: #3E3E3E;
+    background: #D5D1C9;
+}
+
+progressfill {
+    border-left-color: #3E3E3E;
+    border-top-color: #3E3E3E;
+    border-bottom-color: #FFFFFF;
+    border-color: #D5D1C9;
+    background: #3daee9;
+}

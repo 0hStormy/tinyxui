@@ -130,6 +130,7 @@ class AST:
         """
         settings = {
             "window_title": "TinyXUI",
+            "stylesheet": "default.css",
             "width": 320,
             "height": 240
         }

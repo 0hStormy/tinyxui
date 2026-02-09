@@ -27,13 +27,13 @@ def hex_to_argb(hex_code, alpha=255):
     return sdl2.SDL_Color(r, g, b, alpha)
 
 
-def draw_widget(widget):
+def draw_widget(widget, settings):
     """
     Draws a provided widget on the screen
     
     :param widget: Widget object
     """
-    ast = style_provider.generate_ast("default.css")
+    ast = style_provider.generate_ast(settings["stylesheet"])
     match widget.name:
         case "label":
             text_color = style_provider.Provider.get_property(
@@ -104,7 +104,7 @@ def draw_widget(widget):
 
     # Draw children
     for child in widget.children:
-        draw_widget(child)
+        draw_widget(child, settings)
 
 
 def ensure_progressbar_fill(widget):
@@ -283,7 +283,7 @@ def start(file):
         sdl2.SDL_RenderClear(sdl_renderer)
         ensure_progressbar_fill(widgets)
         layout.compute_layout(widgets, settings=settings, font=font)
-        draw_widget(widgets)
+        draw_widget(widgets, settings)
 
         sdl2.SDL_RenderPresent(sdl_renderer)
 
