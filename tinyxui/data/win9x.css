@@ -37,8 +37,8 @@ image {
 }
 
 separator {
-    background: #d1d2d3;
-    border-width: 0px;
+    border-color: #FFFFFF;
+    border-width: 1px;
 }
 
 separator.horizontal {
@@ -64,5 +64,5 @@ progressfill {
     border-top-color: #3E3E3E;
     border-bottom-color: #FFFFFF;
     border-color: #D5D1C9;
-    background: #3daee9;
+    background: #051e66;
 }
