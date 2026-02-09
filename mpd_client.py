@@ -3,6 +3,7 @@ from mpd import MPDClient
 import mpd.base as MPDBase
 import xui
 import threading
+import datetime
 
 
 last_song_file = None
@@ -21,8 +22,20 @@ def get_current_song():
         "artist": song.get("artist", "Unknown"),
         "album": song.get("album", "Unknown"),
         "state": state,
-        "file": song["file"]
+        "file": song["file"],
     }
+
+
+def format_time(seconds: int) -> str:
+    td = datetime.timedelta(seconds=seconds)
+    total_seconds = int(td.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    
+    if hours > 0:
+        return f"{hours}:{minutes:02}:{secs:02}"
+    else:
+        return f"{minutes}:{secs:02}"
 
 
 def play_song():
@@ -49,7 +62,16 @@ async def update_loop():
     while True:
         try:
             song = get_current_song()
+            status = client.status()
             current_file = song["file"]
+            elapsed = int(status["time"].split(":")[0])
+            total = int(status["time"].split(":")[1])
+
+            progress = (elapsed / total) * 100
+            xui.set_attribute("song_progress", "progress", progress)
+            xui.set_data("elapsed_time", format_time(elapsed))
+            xui.set_data("total_time", format_time(total))
+
 
             if current_file != last_song_file:
                 # Song has changed
@@ -59,6 +81,7 @@ async def update_loop():
                 xui.set_data("song_label", song["title"])
                 xui.set_data("artist_label", song["artist"])
                 xui.set_data("album_label", song["album"])
+
 
                 # Update album art
                 try:

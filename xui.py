@@ -96,7 +96,7 @@ def draw_widget(widget):
                 sdl2.SDL_RenderDrawRect(
                     sdl_renderer, sdl2.SDL_Rect(widget.x, widget.y,
                                                 widget.width, widget.height)
-                )            
+                )  
 
         case _:
             style_provider.Provider.draw(ast, widget, sdl_renderer=sdl_renderer)
@@ -105,6 +105,37 @@ def draw_widget(widget):
     # Draw children
     for child in widget.children:
         draw_widget(child)
+
+
+def ensure_progressbar_fill(widget):
+    """
+    Injects a child box for progressbar fill if needed,
+    and updates its progress if it already exists.
+    
+    :param widget: Widget to modify
+    """
+    if widget.name == "progressbar":
+        # Check if a progressfill child exists
+        progressfill = None
+        for child in widget.children:
+            if child.name == "progressfill":
+                progressfill = child
+                break
+
+        if progressfill is None:
+            # Create new progressfill if it doesn't exist
+            fill = type(widget)(name="progressfill")  # reuse your Widget class
+            fill.parent = widget
+            fill.height = widget.height
+            fill.progress = widget.attributes.get("progress", 0)
+            widget.children.append(fill)
+        else:
+            # Update progress if it already exists
+            progressfill.progress = widget.attributes.get("progress", 0)
+
+    # Recurse into children
+    for child in widget.children:
+        ensure_progressbar_fill(child)
 
 
 def build_widget_map(widget):
@@ -128,6 +159,17 @@ def bind_widget(widget_id, callback):
     :param callback: Function to run
     """
     bindings[widget_id] = callback
+
+
+def set_attribute(widget_id, attribute, data):
+    widget = widget_map.get(widget_id)
+    if widget:
+        widget.attributes[attribute] = data  # <-- correct
+        # Sync progress for progressfill widgets if needed
+        if widget.name == "progressfill" and attribute == "progress":
+            widget.progress = data
+        return True
+    return False
 
 
 def set_data(widget_id, data):
@@ -239,6 +281,7 @@ def start(file):
 
         sdl2.SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 255)
         sdl2.SDL_RenderClear(sdl_renderer)
+        ensure_progressbar_fill(widgets)
         layout.compute_layout(widgets, settings=settings, font=font)
         draw_widget(widgets)
 

@@ -28,6 +28,20 @@ box(direction="vertical", align="center", expand=true) {
 
 box(direction="vertical", align="center", hexpand=true) {
     separator(hexpand=true)
+    spacer(height=4)
+    box(direction="horizontal", expand=true) {
+        spacer(width=6)
+        label(id="elapsed_time") {"0:00"}
+        spacer(expand=true)
+        label(id="total_time") {"0:00"}
+        spacer(width=6)
+    }
+    spacer(height=6)
+    box(direction="horizontal", expand=true) {
+        spacer(width=6)
+        progressbar(align="center", expand=true, progress=0, id="song_progress")
+        spacer(width=6)
+    }
     spacer(height=6)
     box(direction="horizontal", align="center") {
         // Function callbacks are asigned in program code with bind_widget()

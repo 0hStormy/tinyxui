@@ -94,7 +94,21 @@ def measure(widget, font):
         w = int(widget.attributes.get("width", 0))
         h = int(widget.attributes.get("height", 0))
         return (w, h)
+    elif widget.name == "progressbar":
+        w = int(widget.attributes.get("width", 128))
+        h = int(widget.attributes.get("height", 8))
+        return (w, h)
+    elif widget.name == "progressfill":
+        total_width = int(widget.attributes.get("width", getattr(widget.parent, "width", 128)))
         
+        # Ensure progress is a number
+        progress = getattr(widget, "progress", 0)
+        
+        # Compute fill width
+        w = int(total_width * (progress / 100))
+        h = int(widget.attributes.get("width", getattr(widget.parent, "height", 128)))
+        return (w, h)
+
     return (0, 0)
 
 def compute_layout(widget, x=0, y=0, width=None, height=None,
