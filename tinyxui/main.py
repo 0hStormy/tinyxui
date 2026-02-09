@@ -1,10 +1,12 @@
-from txm import AST as txm
-import layout
+from .txm import AST as txm
+from . import layout
 import sdl2
 import sdl2.ext
 import sdl2.sdlttf
-import style_provider
+from . import style_provider
 import PIL
+from importlib.resources import files
+
 
 DEBUG_VIEW = False
 bindings = {}
@@ -33,7 +35,8 @@ def draw_widget(widget, settings):
     
     :param widget: Widget object
     """
-    ast = style_provider.generate_ast(settings["stylesheet"])
+    stylesheet = files('tinyxui.data').joinpath(settings["stylesheet"])
+    ast = style_provider.generate_ast(stylesheet)
     match widget.name:
         case "label":
             text_color = style_provider.Provider.get_property(
@@ -55,7 +58,7 @@ def draw_widget(widget, settings):
                 sdl2.SDL_FreeSurface(surface)
                 return
 
-            rect = sdl2.SDL_Rect(widget.x, widget.y, surface.contents.w,
+            rect = sdl2.SDL_Rect(widget.x, (widget.y - 1), surface.contents.w,
                                 surface.contents.h)
             sdl2.SDL_RenderCopy(sdl_renderer, texture, None, rect)
             sdl2.SDL_FreeSurface(surface)
@@ -74,6 +77,7 @@ def draw_widget(widget, settings):
                 widget.texture_w, widget.texture_h = surface.w, surface.h
 
                 sdl2.SDL_FreeSurface(surface)
+                
 
             rect = sdl2.SDL_Rect(widget.x, widget.y, widget.width, widget.height)
             sdl2.SDL_RenderCopy(sdl_renderer, widget.texture_cache, None, rect)
@@ -256,7 +260,8 @@ def start(file):
     # Initialize SDL
     sdl2.ext.init()
     sdl2.sdlttf.TTF_Init()
-    font = sdl2.sdlttf.TTF_OpenFont(b"NotoSans.ttf", 13)
+    ttf = files('tinyxui.data').joinpath("NotoSans.ttf")
+    font = sdl2.sdlttf.TTF_OpenFont(bytes(str(ttf), 'utf-8'), 13)
 
     # Initialize window and renderer
     window = sdl2.ext.Window(

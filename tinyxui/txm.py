@@ -166,7 +166,7 @@ class AST:
                 stack.append(widget)
 
         return settings, root
-    
+
 if __name__ == "__main__":
     """Errors if you try to run TinyXUI on its own"""
     print("Do not run TinyXUI's AST engine on its own!")

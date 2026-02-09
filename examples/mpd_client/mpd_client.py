@@ -1,7 +1,7 @@
 import asyncio
 from mpd import MPDClient
 import mpd.base as MPDBase
-import xui
+import tinyxui
 import threading
 import datetime
 
@@ -68,9 +68,9 @@ async def update_loop():
             total = int(status["time"].split(":")[1])
 
             progress = (elapsed / total) * 100
-            xui.set_attribute("song_progress", "progress", progress)
-            xui.set_data("elapsed_time", format_time(elapsed))
-            xui.set_data("total_time", format_time(total))
+            tinyxui.set_attribute("song_progress", "progress", progress)
+            tinyxui.set_data("elapsed_time", format_time(elapsed))
+            tinyxui.set_data("total_time", format_time(total))
 
 
             if current_file != last_song_file:
@@ -78,9 +78,9 @@ async def update_loop():
                 last_song_file = current_file
 
                 # Update labels
-                xui.set_data("song_label", song["title"])
-                xui.set_data("artist_label", song["artist"])
-                xui.set_data("album_label", song["album"])
+                tinyxui.set_data("song_label", song["title"])
+                tinyxui.set_data("artist_label", song["artist"])
+                tinyxui.set_data("album_label", song["album"])
 
 
                 # Update album art
@@ -88,14 +88,14 @@ async def update_loop():
                     cover_art = client.albumart(song["file"])
                     with open("out.png", "wb") as f:
                         f.write(cover_art["binary"])
-                    xui.refresh_image("cover_art")
+                    tinyxui.refresh_image("cover_art")
                 except KeyError:
                     pass
                 except MPDBase.CommandError:
                     pass
                     with open("out.png", "wb") as f:
                         f.write(b"")
-                    xui.refresh_image("cover_art")
+                    tinyxui.refresh_image("cover_art")
 
         except Exception:
             # GUI not ready yet, or network hiccup
@@ -104,15 +104,15 @@ async def update_loop():
         await asyncio.sleep(0.1)
 
 
-# Run XUI in a separate thread
+# Run tinyxui in a separate thread
 def run_xui():
-    xui.start("mpd.txm")
+    tinyxui.start("mpd.txm")
 
 
 # Bind buttons
-xui.bind_widget("playback_button", play_song)
-xui.bind_widget("next_button", next_song)
-xui.bind_widget("previous_button", previous_song)
+tinyxui.bind_widget("playback_button", play_song)
+tinyxui.bind_widget("next_button", next_song)
+tinyxui.bind_widget("previous_button", previous_song)
 
 
 if __name__ == "__main__":

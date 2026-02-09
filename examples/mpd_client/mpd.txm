@@ -8,7 +8,7 @@
 
 // Some widgets such as box support widget nesting
 // Multiple attributes can be added at once with a comma between them
-box(direction="vertical", align="center", expand=true) {
+box(direction="vertical", expand=true) {
     box(direction="vertical", align="center") {
         // hcenter will horizontally center widgets
         // center will center widgets horizontally and vertically
@@ -26,7 +26,7 @@ box(direction="vertical", align="center", expand=true) {
     }
 }
 
-box(direction="vertical", align="center", hexpand=true) {
+box(direction="vertical", hexpand=true) {
     separator(hexpand=true)
     spacer(height=4)
     box(direction="horizontal", expand=true) {
@@ -42,24 +42,23 @@ box(direction="vertical", align="center", hexpand=true) {
         progressbar(align="center", expand=true, progress=0, id="song_progress")
         spacer(width=6)
     }
-    spacer(height=6)
-    box(direction="horizontal", align="center") {
+    spacer(height=8)
+    box(direction="horizontal", expand=true) {
         // Function callbacks are asigned in program code with bind_widget()
         // The size argument is alias for 1:1 width and height
+        spacer(expand=true)
         button(id="previous_button", width=64, height=32) {
-            spacer(height=5)
             label(align="center") {"Prev"}
         }
         spacer(width=6)
         button(id="playback_button", width=64, height=32) {
-            spacer(height=5)
             label(align="center") {"Pl/Ps"}
         }
         spacer(width=6)
         button(id="next_button", width=64, height=32) {
-            spacer(height=5)
             label(align="center") {"Next"}
         }
+        spacer(expand=true)
     }
     spacer(height=6)
 }

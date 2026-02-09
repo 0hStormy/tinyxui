@@ -1,4 +1,4 @@
-import xui
+import tinyxui as xui
 
 clicker_value = 0
 

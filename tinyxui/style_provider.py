@@ -2,6 +2,7 @@ import re
 import sdl2
 from sdl2.sdlgfx import roundedBoxRGBA, roundedRectangleRGBA, lineRGBA
 
+
 class Node:
     def __init__(self, selector=None, properties=None):
         self.selector = selector

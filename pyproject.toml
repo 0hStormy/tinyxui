@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinyxui"
+version = "0.1.0"
+description = "TinyXUI. A open source, fast, and light GUI toolkit for Python."
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "pysdl2",
+    "pysdl2-dll"
+]
+
+[project.scripts]
+tinyxui = "tinyxui.main:main"
+
+[tool.setuptools]
+packages = ["tinyxui"]

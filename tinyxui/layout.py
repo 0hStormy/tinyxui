@@ -245,6 +245,13 @@ def compute_layout(widget, x=0, y=0, width=None, height=None,
             else:
                 cx = widget.x
 
+            if child.valign == "center":
+                cy = widget.y + (widget.height - ch) // 2
+            elif child.valign == "end":
+                cy = widget.y + widget.height - ch
+            else:
+                cx = widget.x
+
             compute_layout(child, cx, cy, cw, ch, settings=settings, font=font)
             cy += ch
 
