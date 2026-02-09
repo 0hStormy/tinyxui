@@ -13,6 +13,28 @@ class Node:
     
 
 class Provider:
+    def filledCircle(sdl_renderer, x, y, rad, r, g, b, a):
+        sdl2.sdlgfx.filledCircleRGBA(sdl_renderer, x, y, rad, r, g, b, a)
+        sdl2.sdlgfx.aacircleRGBA(sdl_renderer, x, y, rad, r, g, b, a)
+
+    @staticmethod
+    def roundedRect(sdl_renderer, x1, y1, x2, y2, rad, r, g, b, a):
+        circle_positions = [
+            (x1 + rad, y1 + rad),
+            (x2 - rad, y2 - rad),
+            (x1 + rad, y2 - rad),
+            (x2 - rad, y1 + rad),
+        ]
+        for i in circle_positions:
+            Provider.filledCircle(sdl_renderer, i[0], i[1], rad, r, g, b, a)
+        sdl2.SDL_SetRenderDrawColor(
+            sdl_renderer, r, g, b, a
+        )
+        sdl2.SDL_RenderFillRect(
+            sdl_renderer, sdl2.SDL_Rect(x1, y1 + rad, x2, y2)
+        )
+        
+
     @staticmethod
     def draw(ast, widget, sdl_renderer):
         for node in ast:
@@ -56,10 +78,10 @@ class Provider:
                 w, h = widget.width, widget.height
 
                 # Draw background
-                roundedBoxRGBA(
+                Provider.roundedRect(
                     sdl_renderer,
                     x, y,
-                    x + w - 1, y + h - 1,
+                    x + w, y + h,
                     int(radius / 1.25),
                     bgc.r, bgc.g, bgc.b, 255
                 )
@@ -84,14 +106,15 @@ class Provider:
                     lineRGBA(sdl_renderer, x, y, x, y + h - 1, bc_left.r,
                              bc_left.g, bc_left.b, 255)
                 else:
+                    pass
                     # For rounded rectangles, draw a single-color border
-                    roundedRectangleRGBA(
-                        sdl_renderer,
-                        x, y,
-                        x + w - 1, y + h - 1,
-                        radius,
-                        bc.r, bc.g, bc.b, 255
-                    )
+                    #roundedRectangleRGBA(
+                     #   sdl_renderer,
+                      #  x, y,
+                       # x + w - 1, y + h - 1,
+                        #radius,
+                        #bc.r, bc.g, bc.b, 255
+                    #)
 
 
     @staticmethod

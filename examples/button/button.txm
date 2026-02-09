@@ -1,0 +1,12 @@
+!stylesheet="adwaita.css"
+!width = 480
+
+box(direction="vertical", expand=true) {
+	spacer(height=16)
+	box(direction="horizontal", expand=true) {
+		spacer(width=16)
+		button(expand=true) {}
+		spacer(width=16)
+	}
+	spacer(height=16)
+}

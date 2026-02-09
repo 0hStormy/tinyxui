@@ -8,9 +8,9 @@ label {
 
 button {
     border-color: #e6e6e7;
-    border-width: 1px;
-    border-radius: 10px;
-    background: #e6e6e7;
+    border-width: 0px;
+    border-radius: 16px;
+    background: #0000ff;
 }
 
 button:hover {
