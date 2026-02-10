@@ -1,6 +1,6 @@
 import re
 import sdl2
-from sdl2.sdlgfx import roundedBoxRGBA, roundedRectangleRGBA, lineRGBA
+from sdl2.sdlgfx import lineRGBA
 
 
 class Node:
@@ -19,25 +19,46 @@ class Provider:
 
     @staticmethod
     def roundedRect(sdl_renderer, x1, y1, w, h, radius, r, g, b, a):
+        width = w - x1
+        height = h - y1
 
-        circle_positions = [
-            (x1 + radius, y1 + radius),
-            (w - radius - 1, h - radius - 1),
-            (x1 + radius, h - radius - 1),
-            (w - radius - 1, y1 + radius),
-        ]
-        for i in circle_positions:
-            Provider.filledCircle(sdl_renderer, i[0], i[1], radius, r, g, b, a)
-        sdl2.SDL_SetRenderDrawColor(
-            sdl_renderer, r, g, b, a
-        )
-        sdl2.SDL_RenderFillRect(
-            sdl_renderer, sdl2.SDL_Rect(x1 + radius, y1, (w - x1 - (radius * 2)), (h - y1))
-        )
-        sdl2.SDL_RenderFillRect(
-            sdl_renderer, sdl2.SDL_Rect(x1, y1 + radius, (w - x1), (h - y1 - (radius * 2)))
-        )
-        
+        raw_radius = radius
+        max_radius = height // 2
+        radius = max(0, min(raw_radius, max_radius))
+
+        if raw_radius >= height // 2:
+            circle_positions = [
+                (x1 + radius, y1 + radius),
+                (w - radius, y1 + radius)
+            ]
+            for cx, cy in circle_positions:
+                Provider.filledCircle(sdl_renderer, cx, cy, radius, r, g, b, a)
+            sdl2.SDL_SetRenderDrawColor(sdl_renderer, r, g, b, a)
+            sdl2.SDL_RenderFillRect(
+                sdl_renderer,
+                sdl2.SDL_Rect(x1 + radius, y1, width - radius * 2, height + 1)
+            )
+        else:
+            circle_positions = [
+                (x1 + radius, y1 + radius),
+                (w - radius - 1, y1 + radius),
+                (x1 + radius, h - radius - 1),
+                (w - radius - 1, h - radius - 1),
+            ]
+
+            for cx, cy in circle_positions:
+                Provider.filledCircle(sdl_renderer, cx, cy, radius, r, g, b, a)
+            sdl2.SDL_SetRenderDrawColor(sdl_renderer, r, g, b, a)
+            sdl2.SDL_RenderFillRect(
+                sdl_renderer,
+                sdl2.SDL_Rect(x1 + radius, y1, width - radius * 2, height)
+            )
+
+            sdl2.SDL_RenderFillRect(
+                sdl_renderer,
+                sdl2.SDL_Rect(x1, y1 + radius, width, height - radius * 2)
+            )
+
 
     @staticmethod
     def draw(ast, widget, sdl_renderer):
