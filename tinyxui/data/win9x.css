@@ -39,6 +39,7 @@ image {
 separator {
     border-color: #FFFFFF;
     border-width: 1px;
+    border-width: -1px;
 }
 
 separator.horizontal {

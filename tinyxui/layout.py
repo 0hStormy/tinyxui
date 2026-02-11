@@ -1,4 +1,6 @@
 import sdl2
+from . import style_provider
+from importlib.resources import files
 
 def normalize_layout_attrs(widget):
     """
@@ -37,38 +39,38 @@ def normalize_layout_attrs(widget):
         widget.vexpand = True
 
 
-def measure(widget, font):
+def measure(widget, font, settings):
     """
-    Measures and returns minimum width and height for a widget
+    Measures and returns minimum width and height for a widget, including padding.
     
     :param widget: Widget object
     :param font: SDL font object
+    :param settings: Document settings
     """
-    if widget.name == "label":
-        sdl_color = sdl2.SDL_Color(0, 0, 0, 255)
-        surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(
-            font, str(widget.data).encode("utf-8"), sdl_color
-        )
-        if not surface:
-            return (0, 0)
-        w, h = surface.contents.w, surface.contents.h
-        sdl2.SDL_FreeSurface(surface)
-        return (w, h)
-    elif widget.name == "button":
-        w = int(widget.attributes.get("width", 72))
-        h = int(widget.attributes.get("height", 32))
-        return (w, h)
-    elif widget.name == "icon":
-        size = int(widget.attributes.get("size", 16))
-        return (size, size)
-    elif widget.name == "box":
-        direction = widget.attributes.get("direction", "horizontal")
+    # Load padding from stylesheet
+    stylesheet = files('tinyxui.data').joinpath(settings["stylesheet"])
+    ast = style_provider.generate_ast(stylesheet)
+    padding = style_provider.Provider.get_property(ast, widget.name, "padding") or 0
+    pad_left = pad_right = pad_top = pad_bottom = int(padding)
 
-        total_w = 0
-        total_h = 0
+    # If padding is a tuple/list, unpack
+    if isinstance(padding, (tuple, list)):
+        if len(padding) == 2:
+            pad_top, pad_bottom = pad_left, pad_right = padding
+        elif len(padding) == 4:
+            pad_top, pad_right, pad_bottom, pad_left = padding
+
+    # Function to add padding
+    def add_padding(w, h):
+        return w + pad_left + pad_right, h + pad_top + pad_bottom
+
+    # Children override everything
+    if widget.children:
+        direction = widget.attributes.get("direction", "vertical")
+        total_w, total_h = 0, 0
 
         for child in widget.children:
-            cw, ch = measure(child, font)
+            cw, ch = measure(child, font, settings=settings)
 
             if direction == "horizontal":
                 total_w += cw
@@ -77,44 +79,69 @@ def measure(widget, font):
                 total_h += ch
                 total_w = max(total_w, cw)
 
-        return (total_w, total_h)
-    elif widget.name == "image":
-        try:
-            size = int(widget.attributes["size"])
-            return (size, size)
-        except KeyError:
-            w = int(widget.attributes.get("width", 16))
-            h = int(widget.attributes.get("height", 16))
-            return (w, h)
-    elif widget.name == "separator":
-        try:
-            if widget.attributes["direction"] == "vertical":
+        return add_padding(total_w, total_h)
+
+    # Leaf widgets: use match-case
+    match widget.name:
+        case "label":
+            sdl_color = sdl2.SDL_Color(0, 0, 0, 255)
+            surface = sdl2.sdlttf.TTF_RenderUTF8_Blended(
+                font, str(widget.data).encode("utf-8"), sdl_color
+            )
+            if not surface:
+                return add_padding(0, 0)
+            w, h = surface.contents.w, surface.contents.h
+            sdl2.SDL_FreeSurface(surface)
+            return add_padding(w, h)
+
+        case "button":
+            w = int(widget.attributes.get("width", 72))
+            h = int(widget.attributes.get("height", 32))
+            return add_padding(w, h)
+
+        case "icon":
+            size = int(widget.attributes.get("size", 16))
+            return add_padding(size, size)
+
+        case "image":
+            try:
+                size = int(widget.attributes["size"])
+                return add_padding(size, size)
+            except KeyError:
+                w = int(widget.attributes.get("width", 16))
+                h = int(widget.attributes.get("height", 16))
+                return add_padding(w, h)
+
+        case "separator":
+            direction = widget.attributes.get("direction", "horizontal")
+            if direction == "vertical":
                 w = 1
                 h = int(widget.attributes.get("height", 128))
-        except KeyError:
-            w = int(widget.attributes.get("width", 128))
-            h = 1
-        return (w, h)
-    elif widget.name == "spacer":
-        w = int(widget.attributes.get("width", 0))
-        h = int(widget.attributes.get("height", 0))
-        return (w, h)
-    elif widget.name == "progressbar":
-        w = int(widget.attributes.get("width", 128))
-        h = int(widget.attributes.get("height", 8))
-        return (w, h)
-    elif widget.name == "progressfill":
-        total_width = int(widget.attributes.get("width", getattr(widget.parent, "width", 128)))
-        
-        # Ensure progress is a number
-        progress = getattr(widget, "progress", 0)
-        
-        # Compute fill width
-        w = int(total_width * (progress / 100))
-        h = int(widget.attributes.get("width", getattr(widget.parent, "height", 128)))
-        return (w, h)
+            else:
+                w = int(widget.attributes.get("width", 128))
+                h = 1
+            return add_padding(w, h)
 
-    return (0, 0)
+        case "spacer":
+            w = int(widget.attributes.get("width", 0))
+            h = int(widget.attributes.get("height", 0))
+            return add_padding(w, h)
+
+        case "progressbar":
+            w = int(widget.attributes.get("width", 128))
+            return (w, 0)
+
+        case "progressfill":
+            total_width = int(widget.attributes.get("width", getattr(widget.parent, "width", 128)))
+            progress = getattr(widget, "progress", 0)
+            w = int(total_width * (progress / 100))
+            h = int(widget.attributes.get("height", 8))
+            return (w, h)
+
+
+        case _:  # default fallback
+            return (0, 0)
+
 
 def compute_layout(widget, x=0, y=0, width=None, height=None,
                    settings=None, font=None):
@@ -140,17 +167,17 @@ def compute_layout(widget, x=0, y=0, width=None, height=None,
         widget.x, widget.y = x, y
         widget.width, widget.height = width, height
     else:
-        mw, mh = measure(widget, font)
+        mw, mh = measure(widget, font, settings=settings)
         widget.x, widget.y = x, y
-        widget.width = width
-        widget.height = height
+        widget.width = max(width, mw)
+        widget.height = max(height, mh)
         if widget.hexpand:
             width = max(width, mw)
         if widget.vexpand:
             height = max(height, mh)
 
     if width is None or height is None:
-        mw, mh = measure(widget, font)
+        mw, mh = measure(widget, font, settings=settings)
         widget.width = mw if width is None else width
         widget.height = mh if height is None else height
 
@@ -170,7 +197,7 @@ def compute_layout(widget, x=0, y=0, width=None, height=None,
         sizes = []
 
         for child in widget.children:
-            cw, ch = measure(child, font)
+            cw, ch = measure(child, font, settings=settings)
             sizes.append([cw, ch])
             total_base += cw
 
@@ -209,7 +236,7 @@ def compute_layout(widget, x=0, y=0, width=None, height=None,
         sizes = []
 
         for child in widget.children:
-            cw, ch = measure(child, font)
+            cw, ch = measure(child, font, settings=settings)
             sizes.append([cw, ch])
             total_base += ch
 
@@ -255,7 +282,7 @@ def compute_layout(widget, x=0, y=0, width=None, height=None,
             elif child.valign == "end":
                 cy = widget.y + widget.height - ch
             else:
-                cx = widget.x
+                pass
 
             compute_layout(child, cx, cy, cw, ch, settings=settings, font=font)
             cy += ch

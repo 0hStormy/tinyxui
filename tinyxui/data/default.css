@@ -11,6 +11,7 @@ button {
     border-width: 1px;
     border-radius: 4px;
     background: #fcfcfc;
+    padding: 6px
 }
 
 button:hover {
@@ -39,6 +40,7 @@ separator {
 separator.horizontal {
     height: 1px;
     width: 100%;
+    border-width: -1px;
 }
 
 separator.vertical {

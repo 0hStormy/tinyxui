@@ -6,6 +6,7 @@ import sdl2.sdlttf
 from . import style_provider
 import PIL
 from importlib.resources import files
+import sys
 
 
 DEBUG_VIEW = False
@@ -252,6 +253,7 @@ def start(file):
     global widgets
     global font
     global sdl_renderer
+    global window
     ast = txm.generate_ast(file)
     settings = ast[0]
     widgets = ast[1]
@@ -296,6 +298,32 @@ def start(file):
     sdl2.SDL_DestroyRenderer(sdl_renderer)
     window.close()
     sdl2.ext.quit()
+
+
+def load_txm(file):
+    """
+    Load a new TXM file into the current running instance
+    and resize the window to match new settings.
+    """
+    global settings
+    global widgets
+    global window
+
+    ast = txm.generate_ast(file)
+    settings = ast[0]
+    widgets = ast[1]
+
+    # Clear and rebuild widget map
+    widget_map.clear()
+    build_widget_map(widgets)
+
+    # Resize window to match new TXM settings
+    width = settings.get("width")
+    height = settings.get("height")
+
+    if width and height:
+        sdl2.SDL_SetWindowSize(window.window, width, height)
+
 
 if __name__ == "__main__":
     """
